@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "biscuits"
+version = "0.1.0"
+description = "KI-gestützte Softwareentwicklung"
+authors = ["Daniel Senften <daniel.senften@ffhs.ch>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
