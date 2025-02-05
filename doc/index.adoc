@@ -1,7 +1,7 @@
 = BiscuITs
-:doctype: book
-:author: Daniel Senften
+Author: Daniel Senften
 :email: daniel.senften@ffhs.ch
+:doctype: book
 include::locale/attributes-de.adoc[]
 :imagesdir: images/
 :toc: left
@@ -19,4 +19,60 @@ include::locale/attributes-de.adoc[]
 Dieser Abschnitt muss noch erstellt werden.
 --
 
-== Abschnittstitel
+== Übersicht
+
+Dieses Projekt demonstriert eine Microservice-Architektur, in der mittels RabbitMQ asynchrone Kommunikation zwischen Komponenten realisiert wird. Die Architektur umfasst:
+
+* Eine **Streamlit UI**, die Benutzereingaben (Name und Adresse) entgegennimmt.
+* **Microservice 1** (Flask API), der Anfragen entgegennimmt, in eine RabbitMQ-Queue (request_queue) weiterleitet und asynchron Antworten aus der response_queue entgegennimmt.
+* **Microservice 2** (Worker), der Nachrichten aus der request_queue verarbeitet, eine simulierte GPT-4o-Abfrage durchführt und Ergebnisse in die response_queue zurückschreibt.
+* **RabbitMQ** als Message Broker, der die asynchrone Kommunikation zwischen den Microservices ermöglicht.
+
+== Architektur und Ablauf
+
+=== Ablaufbeschreibung
+
+1. **Benutzereingabe**: Der Benutzer gibt über die Streamlit UI seinen Namen und seine Adresse (PLZ, Ort) ein.
+2. **Anfrage an Microservice 1**: Die UI sendet eine HTTP POST-Anfrage an Microservice 1 (/submit) mit den Eingabedaten.
+3. **Veröffentlichung in RabbitMQ**: Microservice 1 generiert eine eindeutige `correlation_id` und publiziert die Nachricht in die `request_queue`.
+4. **Verarbeitung durch Microservice 2**: Microservice 2 konsumiert die Nachricht, simuliert die GPT-4o-Abfrage (hier durch eine Dummy-Antwort) und publiziert das Ergebnis in die `response_queue`.
+5. **Ergebnisübergabe an Microservice 1**: Ein Hintergrundthread in Microservice 1 lauscht auf der `response_queue` und speichert eingehende Ergebnisse.
+6. **Polling durch die UI**: Die UI pollt periodisch den Endpunkt `/result/{correlation_id}`, um den Status oder das endgültige Ergebnis abzurufen.
+7. **Anzeige des Ergebnisses**: Nach Erhalt des Ergebnisses wird dieses in der UI angezeigt. Während der Wartezeit wird eine drehende Sanduhr (Spinner) gezeigt.
+
+=== Komponentenbeschreibung
+
+* **Streamlit UI**:
+  - Erfasst Benutzerdaten.
+  - Sendet Anfragen an Microservice 1.
+  - Zeigt eine Ladeanimation und das finale Ergebnis an.
+
+* **Microservice 1 (Flask API)**:
+  - Stellt die Endpunkte `/submit` (für den Anfrageversand) und `/result/{correlation_id}` (für das Abrufen von Ergebnissen) bereit.
+  - Verbindet sich mit RabbitMQ, um Nachrichten in den asynchronen Kommunikationsfluss einzubinden.
+  - Speichert asynchron eingehende Ergebnisse in einem In-Memory-Speicher.
+
+* **Microservice 2 (Worker)**:
+  - Konsumiert Nachrichten aus der `request_queue`.
+  - Simuliert eine GPT-4o-Abfrage (hier als Dummy-Antwort implementiert).
+  - Sendet das Ergebnis zurück in die `response_queue`.
+
+* **RabbitMQ**:
+  - Dient als Message Broker.
+  - Verwaltet zwei Queues:
+    - `request_queue` für eingehende Anfragen.
+    - `response_queue` für zurückgesendete Ergebnisse.
+
+== Installation und Ausführung
+
+=== Voraussetzungen
+
+* Docker und Docker Compose installiert.
+* Der verwendete Port für RabbitMQ (15672 für die Management-Konsole), Microservice 1 (5000) und Streamlit UI (8501) sollten nicht blockiert sein.
+
+=== Starten der Anwendung
+
+1. Klone das Repository oder lege die Projektordner wie oben beschrieben an.
+2. Stelle sicher, dass alle Dockerfiles und der `docker-compose.yml` korrekt abgelegt sind.
+3. Starte die Container:
+
