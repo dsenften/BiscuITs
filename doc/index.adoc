@@ -1,12 +1,14 @@
 = BiscuITs
+:doctype: book
 :author: Daniel Senften
 :email: daniel.senften@ffhs.ch
+include::locale/attributes-de.adoc[]
 :imagesdir: images/
 :toc: left
 :sectnums:
 :sectnumlevels: 2
 :pdf-theme: themes/pdf-theme.yml
-:title-logo-image: image:images/logo.png[top=0%, align=left, width=20%]
+:title-logo-image: image:logo.png[top=0%, align=left, width=20%]
 :quick-uri: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
 
 [.preamble]
@@ -16,3 +18,5 @@
 
 Dieser Abschnitt muss noch erstellt werden.
 --
+
+== Abschnittstitel
