@@ -10,7 +10,7 @@ def get_git_version_info():
 
     if shash_match and refnames_match:
         shash = shash_match.group(1)
-        refnames = refnames_match.group(1)
+        refnames = refnames_match.group(1).replace('->', '→')
         return f"[git] Branch: {refnames}@{shash}"
     else:
         return "Version information not found"
