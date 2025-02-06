@@ -14,7 +14,7 @@ services:
     build: ../services/microservice1
     container_name: microservice1
     ports:
-      - "5000:5000"
+      - "5001:5001"
     depends_on:
       - rabbitmq
 
@@ -31,3 +31,4 @@ services:
       - "8501:8501"
     depends_on:
       - microservice1
+      - microservice2

@@ -8,6 +8,6 @@ RUN pip install flask pika
 # Kopiere den Code in den Container
 COPY app.py .
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["python", "app.py"]

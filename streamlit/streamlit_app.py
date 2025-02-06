@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import time
 
-MICROSERVICE1_URL = "http://microservice1:5000"
+MICROSERVICE1_URL = "http://microservice1:5001"
 
 st.title("KI-gestützte Microservice-Architektur")
 st.write("Bitte gib deinen Namen und deine Adresse ein:")

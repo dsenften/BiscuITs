@@ -68,7 +68,7 @@ Dieses Projekt demonstriert eine Microservice-Architektur, in der mittels Rabbit
 === Voraussetzungen
 
 * Docker und Docker Compose installiert.
-* Der verwendete Port für RabbitMQ (15672 für die Management-Konsole), Microservice 1 (5000) und Streamlit UI (8501) sollten nicht blockiert sein.
+* Der verwendete Port für RabbitMQ (15672 für die Management-Konsole), Microservice 1 (5001) und Streamlit UI (8501) sollten nicht blockiert sein.
 
 === Starten der Anwendung
 
