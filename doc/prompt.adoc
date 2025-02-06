@@ -21,5 +21,8 @@ Ich benötige folgende Artefakte:
 ** Eine *docker-compose.yml* mit der vollständigen Konfiguration
 ** Zwei *Microservices* zur asynchronen Kommunikation
 ** Eine *Streamlit UI*
+** Für alle Services müssen neben dem Code und der `docker-compose.yml` Datei natürlich auch die notwendigen `Dockerfile` und `requirements.txt` Dateien erstellt werden.
 ** Zwei *Diagramme* (Sequenzdiagramm und Komponentendiagramm)
 ** Eine ausführliche *Dokumentation* im AsciiDoc-Format für alle Komponenten, die die Abläufe detailliert erläutert
+
+Hinweis: Bei der Erstellung der `docker-compose.yml` Datei darauf achten, dass das Attribut `version` obsolet ist.

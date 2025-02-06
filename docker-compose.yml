@@ -1,0 +1,30 @@
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    
+  microservice1:
+    build: ./microservice1
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    
+  microservice2: 
+    build: ./microservice2
+    depends_on:
+      - rabbitmq  
+    environment:
+      RABBITMQ_HOST: rabbitmq 
+      RABBITMQ_PORT: 5672
+
+  ui:
+    build: ./ui
+    ports:
+      - "8501:8501"
+    depends_on:
+      - microservice1

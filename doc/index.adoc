@@ -19,60 +19,54 @@ include::locale/attributes-de.adoc[]
 Dieser Abschnitt muss noch erstellt werden.
 --
 
-== Übersicht
+= Dokumentation: KI-gestützte Microservice-Architektur
 
-Dieses Projekt demonstriert eine Microservice-Architektur, in der mittels RabbitMQ asynchrone Kommunikation zwischen Komponenten realisiert wird. Die Architektur umfasst:
+== Überblick
 
-* Eine **Streamlit UI**, die Benutzereingaben (Name und Adresse) entgegennimmt.
-* **Microservice 1** (Flask API), der Anfragen entgegennimmt, in eine RabbitMQ-Queue (request_queue) weiterleitet und asynchron Antworten aus der response_queue entgegennimmt.
-* **Microservice 2** (Worker), der Nachrichten aus der request_queue verarbeitet, eine simulierte GPT-4o-Abfrage durchführt und Ergebnisse in die response_queue zurückschreibt.
-* **RabbitMQ** als Message Broker, der die asynchrone Kommunikation zwischen den Microservices ermöglicht.
+Die Anwendung besteht aus folgenden Komponenten:
 
-== Architektur und Ablauf
+- *Streamlit UI*: Dient zur Eingabe von Name und Adresse des Anwenders
+- *Microservice 1*: Empfängt die Adresse von der UI, ruft die GPT-3 API auf und sendet das Ergebnis an Microservice 2
+- *RabbitMQ*: Message Bus zur asynchronen Kommunikation zwischen den Microservices
+- *Microservice 2*: Empfängt das Ergebnis von Microservice 1 und sendet es zurück an die UI
+- *GPT-3 API*: Wird von Microservice 1 aufgerufen, um Informationen zum angegebenen Ort abzufragen
 
-=== Ablaufbeschreibung
+== Ablauf
 
-1. **Benutzereingabe**: Der Benutzer gibt über die Streamlit UI seinen Namen und seine Adresse (PLZ, Ort) ein.
-2. **Anfrage an Microservice 1**: Die UI sendet eine HTTP POST-Anfrage an Microservice 1 (/submit) mit den Eingabedaten.
-3. **Veröffentlichung in RabbitMQ**: Microservice 1 generiert eine eindeutige `correlation_id` und publiziert die Nachricht in die `request_queue`.
-4. **Verarbeitung durch Microservice 2**: Microservice 2 konsumiert die Nachricht, simuliert die GPT-4o-Abfrage (hier durch eine Dummy-Antwort) und publiziert das Ergebnis in die `response_queue`.
-5. **Ergebnisübergabe an Microservice 1**: Ein Hintergrundthread in Microservice 1 lauscht auf der `response_queue` und speichert eingehende Ergebnisse.
-6. **Polling durch die UI**: Die UI pollt periodisch den Endpunkt `/result/{correlation_id}`, um den Status oder das endgültige Ergebnis abzurufen.
-7. **Anzeige des Ergebnisses**: Nach Erhalt des Ergebnisses wird dieses in der UI angezeigt. Während der Wartezeit wird eine drehende Sanduhr (Spinner) gezeigt.
+1. Der Anwender gibt in der Streamlit UI seinen Namen und seine Adresse (PLZ, Ort) ein.
+2. Die UI sendet die Adresse an Microservice 1.
+3. Microservice 1 stellt die Adresse in eine Queue von RabbitMQ.
+4. Microservice 1 entnimmt die Adresse aus der Queue und ruft damit die GPT-3 API auf. Der Prompt lautet: "Was kannst du mir zu {Ort} sagen?"
+5. Die API-Antwort wird von Microservice 1 in eine Ergebnis-Queue von RabbitMQ gestellt.
+6. Microservice 2 entnimmt das Ergebnis aus der Queue.
+7. Microservice 2 sendet das Ergebnis an die UI zurück.
+8. Die UI zeigt das Ergebnis an, sobald es verfügbar ist. Bis dahin wird ein Lade-Spinner angezeigt.
 
-=== Komponentenbeschreibung
+== Komponenten
 
-* **Streamlit UI**:
-  - Erfasst Benutzerdaten.
-  - Sendet Anfragen an Microservice 1.
-  - Zeigt eine Ladeanimation und das finale Ergebnis an.
+=== Streamlit UI
 
-* **Microservice 1 (Flask API)**:
-  - Stellt die Endpunkte `/submit` (für den Anfrageversand) und `/result/{correlation_id}` (für das Abrufen von Ergebnissen) bereit.
-  - Verbindet sich mit RabbitMQ, um Nachrichten in den asynchronen Kommunikationsfluss einzubinden.
-  - Speichert asynchron eingehende Ergebnisse in einem In-Memory-Speicher.
+Die Benutzeroberfläche ist mit Streamlit implementiert. Sie stellt ein Formular zur Eingabe von Name und Adresse bereit. Beim Absenden des Formulars wird die Adresse an Microservice 1 gesendet. Die UI wartet dann auf die asynchrone Antwort von Microservice 2. Während der Wartezeit wird eine Sanduhr-Animation angezeigt.
 
-* **Microservice 2 (Worker)**:
-  - Konsumiert Nachrichten aus der `request_queue`.
-  - Simuliert eine GPT-4o-Abfrage (hier als Dummy-Antwort implementiert).
-  - Sendet das Ergebnis zurück in die `response_queue`.
+=== Microservice 1
 
-* **RabbitMQ**:
-  - Dient als Message Broker.
-  - Verwaltet zwei Queues:
-    - `request_queue` für eingehende Anfragen.
-    - `response_queue` für zurückgesendete Ergebnisse.
+Microservice 1 ist in Python implementiert. Er verbindet sich mit RabbitMQ, um Adressen aus einer Queue zu empfangen. Für jede Adresse ruft er die GPT-3 API mit dem Prompt "Was kannst du mir zu {Ort} sagen?" auf. Die Antwort der API stellt er in eine Ergebnis-Queue von RabbitMQ.
 
-== Installation und Ausführung
+=== RabbitMQ
 
-=== Voraussetzungen
+RabbitMQ dient als Message Bus für die asynchrone Kommunikation zwischen den Microservices. Es werden zwei Queues verwendet:
 
-* Docker und Docker Compose installiert.
-* Der verwendete Port für RabbitMQ (15672 für die Management-Konsole), Microservice 1 (5000) und Streamlit UI (8501) sollten nicht blockiert sein.
+- `address_queue`: Enthält die vom Anwender eingegebenen Adressen
+- `result_queue`: Enthält die Ergebnisse der GPT-3 API-Aufrufe
 
-=== Starten der Anwendung
+=== Microservice 2
 
-1. Klone das Repository oder lege die Projektordner wie oben beschrieben an.
-2. Stelle sicher, dass alle Dockerfiles und der `docker-compose.yml` korrekt abgelegt sind.
-3. Starte die Container:
+Microservice 2 ist ebenfalls in Python implementiert. Er verbindet sich mit RabbitMQ, um Ergebnisse aus der `result_queue` zu empfangen. Die empfangenen Ergebnisse sendet er an die Streamlit UI zurück.
 
+=== GPT-3 API
+
+Die GPT-3 API von OpenAI wird verwendet, um basierend auf dem angegebenen Ort relevante Informationen abzufragen. Microservice 1 ruft die API mit dem Prompt "Was kannst du mir zu {Ort} sagen?" auf, wobei {Ort} durch den vom Anwender angegebenen Ort ersetzt wird.
+
+== Deployment
+
+Alle Komponenten werden mit Docker containerisiert. Die Container werden mit Docker Compose orchestriert. Die Konfiguration befindet sich in der Datei `docker-compose.yml`. Zum Starten der Anwendung muss lediglich der Befehl `docker compose up` ausgeführt werden.
