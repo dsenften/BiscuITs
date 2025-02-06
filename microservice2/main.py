@@ -23,12 +23,18 @@
 
 import os
 import pika
-
+import time
 
 def main():
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.environ['RABBITMQ_HOST'], port=int(os.environ['RABBITMQ_PORT'])))
-    channel = connection.channel()
-    channel.queue_declare(queue='result_queue')
+    while True:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.environ['RABBITMQ_HOST'], port=int(os.environ['RABBITMQ_PORT'])))
+            channel = connection.channel()
+            channel.queue_declare(queue='result_queue')
+            break
+        except pika.exceptions.AMQPConnectionError:
+            print("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
+            time.sleep(5)
 
     def callback(ch, method, properties, body):
         print(f"Received result: {body}")
@@ -38,7 +44,6 @@ def main():
 
     print('Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
-
 
 if __name__ == '__main__':
     try:

@@ -24,13 +24,20 @@
 import os
 import pika
 import openai
+import time
 
 
 def main():
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=os.environ['RABBITMQ_HOST'], port=int(os.environ['RABBITMQ_PORT'])))
-    channel = connection.channel()
-    channel.queue_declare(queue='address_queue')
+    while True:
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host=os.environ['RABBITMQ_HOST'], port=int(os.environ['RABBITMQ_PORT'])))
+            channel = connection.channel()
+            channel.queue_declare(queue='address_queue')
+            break
+        except pika.exceptions.AMQPConnectionError:
+            print("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
+            time.sleep(5)
 
     def callback(ch, method, properties, body):
         address = body.decode()
