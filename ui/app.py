@@ -1,38 +1,53 @@
-#  Released under MIT License
-#
-#  Copyright (©) 2025. Talent Factory GmbH
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy
-#  of this software and associated documentation files (the "Software"), to deal
-#  in the Software without restriction, including without limitation the rights to
-#  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-#  of the Software, and to permit persons to whom the Software is furnished to
-#  do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in
-#  all copies or substantial portions of the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-#  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-#  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-#  NON INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-#  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-#  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-#  OR OTHER DEALINGS IN THE SOFTWARE.
-
 import streamlit as st
 import pika
 import time
+import json
 
 
 def send_address(name, address):
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
-    channel = connection.channel()
-    channel.queue_declare(queue='address_queue')
-    message = f"{name},{address}"
-    channel.basic_publish(exchange='', routing_key='address_queue', body=message)
-    connection.close()
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        channel = connection.channel()
+
+        # Declare both queues
+        channel.queue_declare(queue='address_queue')
+        channel.queue_declare(queue='result_queue')
+
+        # Create message as JSON
+        message = json.dumps({
+            "name": name,
+            "address": address
+        })
+
+        channel.basic_publish(exchange='', routing_key='address_queue', body=message)
+        connection.close()
+        return True
+    except Exception as e:
+        st.error(f"Fehler beim Senden: {str(e)}")
+        return False
+
+
+def wait_for_result(timeout=30):
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        channel = connection.channel()
+        channel.queue_declare(queue='result_queue')
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            method_frame, properties, body = channel.basic_get(queue='result_queue', auto_ack=True)
+            if method_frame:
+                channel.close()
+                connection.close()
+                return body.decode()
+            time.sleep(0.1)
+
+        channel.close()
+        connection.close()
+        return None
+    except Exception as e:
+        st.error(f"Fehler beim Empfangen: {str(e)}")
+        return None
 
 
 def main():
@@ -42,24 +57,21 @@ def main():
         name = st.text_input("Name")
         plz = st.text_input("PLZ")
         ort = st.text_input("Ort")
-
         submit_button = st.form_submit_button(label='Senden')
 
     if submit_button:
+        if not name or not plz or not ort:
+            st.warning("Bitte füllen Sie alle Felder aus.")
+            return
+
         address = f"{plz} {ort}"
-        send_address(name, address)
-
-        with st.spinner('Warte auf Antwort...'):
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
-            channel = connection.channel()
-            channel.queue_declare(queue='result_queue')
-
-            for method_frame, properties, body in channel.consume('result_queue'):
-                result = body.decode()
-                st.write(result)
-                break
-
-            channel.close()
+        if send_address(name, address):
+            with st.spinner('Warte auf Antwort...'):
+                result = wait_for_result()
+                if result:
+                    st.success(result)
+                else:
+                    st.error("Zeitüberschreitung bei der Antwort.")
 
 
 if __name__ == '__main__':

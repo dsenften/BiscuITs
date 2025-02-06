@@ -1,5 +1,5 @@
-= BiscuITs
-Author: Daniel Senften
+= Dokumentation: KI-gestützte Microservice-Architektur
+Daniel Senften
 :email: daniel.senften@ffhs.ch
 :doctype: book
 include::locale/attributes-de.adoc[]
@@ -10,63 +10,245 @@ include::locale/attributes-de.adoc[]
 :pdf-theme: themes/pdf-theme.yml
 :title-logo-image: image:logo.png[top=0%, align=left, width=20%]
 :quick-uri: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
+:streamlit: https://streamlit.io/
 
 [.preamble]
 --
 [.text-center]
 *Abstract*
 
-Dieser Abschnitt muss noch erstellt werden.
+Muss noch erstellt werden ...
+
 --
 
-= Dokumentation: KI-gestützte Microservice-Architektur
 
 == Überblick
 
-Die Anwendung besteht aus folgenden Komponenten:
+.Komponentendiagramm
+[mermaid, component-diagram, svg]
+----
+include::images/component-diagram.mermaid[width=60%]
+----
 
-- *Streamlit UI*: Dient zur Eingabe von Name und Adresse des Anwenders
-- *Microservice 1*: Empfängt die Adresse von der UI, ruft die GPT-3 API auf und sendet das Ergebnis an Microservice 2
-- *RabbitMQ*: Message Bus zur asynchronen Kommunikation zwischen den Microservices
-- *Microservice 2*: Empfängt das Ergebnis von Microservice 1 und sendet es zurück an die UI
-- *GPT-3 API*: Wird von Microservice 1 aufgerufen, um Informationen zum angegebenen Ort abzufragen
+Das Komponentendiagramm zeigt:
+
+1. Die Hauptkomponenten:
+  ** Frontend: Streamlit UI-Anwendung (Port 8501)
+  ** Message Broker: RabbitMQ (Ports 5672, 15672)
+  ** Backend Services: Microservice 1 und 2
+
+2. Die Kommunikationswege:
+  ** `address_queue`: UI → RabbitMQ → Microservice 1
+  ** `processing_queue`: Microservice 1 → RabbitMQ → Microservice 2
+  ** `result_queue`: Microservice 2 → RabbitMQ → UI
+
+3. Konfigurationen:
+  ** OpenAI API Key für Microservice 1
+  ** RabbitMQ-Konfiguration für beide Microservices
+
+4. Docker-Umgebung:
+  ** Alle Komponenten laufen in Docker-Containern
+  ** Definierte Ports für externe Kommunikation
+
+Die verschiedenen Farben und Stile helfen dabei, die unterschiedlichen Arten von Komponenten visuell zu unterscheiden: Services, Message Broker, UI und Umgebungsvariablen.
 
 == Ablauf
 
-1. Der Anwender gibt in der Streamlit UI seinen Namen und seine Adresse (PLZ, Ort) ein.
-2. Die UI sendet die Adresse an Microservice 1.
-3. Microservice 1 stellt die Adresse in eine Queue von RabbitMQ.
-4. Microservice 1 entnimmt die Adresse aus der Queue und ruft damit die GPT-3 API auf. Der Prompt lautet: "Was kannst du mir zu {Ort} sagen?"
-5. Die API-Antwort wird von Microservice 1 in eine Ergebnis-Queue von RabbitMQ gestellt.
-6. Microservice 2 entnimmt das Ergebnis aus der Queue.
-7. Microservice 2 sendet das Ergebnis an die UI zurück.
-8. Die UI zeigt das Ergebnis an, sobald es verfügbar ist. Bis dahin wird ein Lade-Spinner angezeigt.
+.Sequenzdiagramm
+[mermaid, sequence-diagram, svg]
+----
+include::images/sequence-diagram.mermaid[width=60%]
+----
+
+Das Sequenzdiagramm zeigt den kompletten Ablauf:
+
+1. Initialisierungsphase:
+  ** Alle Komponenten deklarieren ihre benötigten Queues bei RabbitMQ
+  ** UI: `result_queue`
+  ** Microservice 1: `address_queue`, `processing_queue`
+  ** Microservice 2: `processing_queue`, `result_queue`
+
+2. Nachrichtenfluss:
+  ** Die UI sendet Adressdaten an die `address_queue`
+  ** Microservice 1 empfängt diese und führt die initiale Verarbeitung durch
+  ** Microservice 1 sendet die verarbeiteten Daten an die `processing_queue`
+  ** Microservice 2 empfängt diese Daten, führt die finale Verarbeitung durch
+  ** Microservice 2 sendet das Endergebnis an die `result_queue`
+  ** Die UI empfängt das Endergebnis und zeigt es an
+
+Dieses Diagramm verdeutlicht die asynchrone Kommunikation zwischen den Komponenten
+und die zentrale Rolle von RabbitMQ als Message Broker.
 
 == Komponenten
 
 === Streamlit UI
 
-Die Benutzeroberfläche ist mit Streamlit implementiert. Sie stellt ein Formular zur Eingabe von Name und Adresse bereit. Beim Absenden des Formulars wird die Adresse an Microservice 1 gesendet. Die UI wartet dann auf die asynchrone Antwort von Microservice 2. Während der Wartezeit wird eine Sanduhr-Animation angezeigt.
+==== Beschreibung
+
+{streamlit}[Streamlit]-basierte Webanwendung zur Erfassung und Verarbeitung von Adressdaten. Die Anwendung sendet Daten an einen RabbitMQ-basierten Microservice und zeigt die Verarbeitungsergebnisse an.
+
+==== Funktionen
+
+===== Benutzeroberfläche
+* Eingabefelder für Name, PLZ und Ort
+* Formular-basierte Dateneingabe
+* Statusanzeigen für Verarbeitungsprozess
+
+===== Kommunikation
+* RabbitMQ-Integration für asynchrone Verarbeitung
+* Timeout-Handling (30 Sekunden)
+
+==== Nachrichtenformat
+
+Ausgehend:
+[source,json]
+----
+{
+    "name": "string",
+    "address": "string"
+}
+----
+
+==== Queues
+
+* `address_queue`: Sendet Adressdaten an Microservices
+* `result_queue`: Empfängt Verarbeitungsergebnisse
+
+==== Fehlerbehandlung
+
+* Validierung der Eingabefelder
+* Fehlerbehandlung für RabbitMQ-Verbindungen
+* Timeout-Überwachung bei Antworten
+* Benutzerfreundliche Fehleranzeigen
+
+.Quellcode der Webanwendung
+[source, python]
+----
+include::../ui/app.py[]
+----
 
 === Microservice 1
 
-Microservice 1 ist in Python implementiert. Er verbindet sich mit RabbitMQ, um Adressen aus einer Queue zu empfangen. Für jede Adresse ruft er die GPT-3 API mit dem Prompt "Was kannst du mir zu {Ort} sagen?" auf. Die Antwort der API stellt er in eine Ergebnis-Queue von RabbitMQ.
+==== Beschreibung
 
-=== RabbitMQ
+Microservice zur Verarbeitung von Adressdaten über RabbitMQ. Der Service empfängt Nachrichten mit Namen und Adressen, führt eine initiale Verarbeitung durch und leitet die Ergebnisse an einen zweiten Microservice weiter.
 
-RabbitMQ dient als Message Bus für die asynchrone Kommunikation zwischen den Microservices. Es werden zwei Queues verwendet:
+==== Konfiguration
 
-- `address_queue`: Enthält die vom Anwender eingegebenen Adressen
-- `result_queue`: Enthält die Ergebnisse der GPT-3 API-Aufrufe
+[source]
+----
+RABBITMQ_HOST: Host des RabbitMQ-Servers
+RABBITMQ_PORT: Port des RabbitMQ-Servers
+----
+
+==== Nachrichtenformat
+
+Eingehend:
+[source,json]
+----
+{
+    "name": "string",
+    "address": "string"
+}
+----
+
+Ausgehend:
+[source,json]
+----
+{
+    "name": "string",
+    "address": "string",
+    "initial_result": "string"
+}
+----
+
+==== Queues
+
+* `address_queue`: Empfängt eingehende Nachrichten
+* `processing_queue`: Sendet verarbeitete Nachrichten an Microservice 2
+
+==== Fehlerbehandlung
+
+* Automatische Wiederverbindung bei RabbitMQ-Verbindungsfehlern
+* Behandlung von ungültigen JSON-Nachrichten
+* Logging von Verarbeitungsfehlern
+
+.Quellcode zu Microservice 1
+[source, python]
+----
+include::../microservice1/main.py[]
+----
 
 === Microservice 2
 
-Microservice 2 ist ebenfalls in Python implementiert. Er verbindet sich mit RabbitMQ, um Ergebnisse aus der `result_queue` zu empfangen. Die empfangenen Ergebnisse sendet er an die Streamlit UI zurück.
+==== Beschreibung
 
-=== GPT-3 API
+Zweiter Microservice in der Verarbeitungskette für Adressdaten.
+Empfängt vorverarbeitete Daten von Microservice 1, führt weitere Verarbeitung
+durch und sendet die Endergebnisse an eine UI-Queue.
 
-Die GPT-3 API von OpenAI wird verwendet, um basierend auf dem angegebenen Ort relevante Informationen abzufragen. Microservice 1 ruft die API mit dem Prompt "Was kannst du mir zu {Ort} sagen?" auf, wobei {Ort} durch den vom Anwender angegebenen Ort ersetzt wird.
+==== Konfiguration
+
+[source]
+----
+RABBITMQ_HOST: Host des RabbitMQ-Servers
+RABBITMQ_PORT: Port des RabbitMQ-Servers
+----
+
+==== Nachrichtenformat
+
+Eingehend:
+[source,json]
+----
+{
+    "name": "string",
+    "address": "string",
+    "initial_result": "string"
+}
+----
+
+Ausgehend:
+[source]
+----
+String im Format:
+"Analyse abgeschlossen für {name}:
+Adresse: {address}
+Details: {initial_result}"
+----
+
+==== Queues
+
+* `processing_queue`: Empfängt Nachrichten von Microservice 1
+* `result_queue`: Sendet Endergebnisse an die UI
+
+==== Fehlerbehandlung
+
+* Automatische Wiederverbindung bei RabbitMQ-Verbindungsfehlern
+* Weiterleitung von Fehlermeldungen an die UI-Queue
+* Sauberes Shutdown bei CTRL+C
+
+
+.Quellcode zu Microservice 2
+[source, python]
+----
+include::../microservice2/main.py[]
+----
+
 
 == Deployment
 
-Alle Komponenten werden mit Docker containerisiert. Die Container werden mit Docker Compose orchestriert. Die Konfiguration befindet sich in der Datei `docker-compose.yml`. Zum Starten der Anwendung muss lediglich der Befehl `docker compose up` ausgeführt werden.
+Alle Komponenten werden mit Docker containerisiert. Die Container werden mit
+Docker Compose orchestriert. Die Konfiguration befindet sich in der Datei
+`docker-compose.yml`. Zum Starten der Anwendung muss lediglich der Befehl
+
+[source, yaml]
+----
+include::../docker-compose.yml[]
+----
+
+[source,bash]
+----
+docker compose up
+----
+
+ausgeführt werden.
