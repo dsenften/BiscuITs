@@ -1,6 +1,7 @@
-== Verwendeter OpenAI-Prompt
+== Verwendeter AI-Prompt
 
-Für einen Webcast mit einer Dauer von ca. 30 Minuten möchte ich den Teilnehmenden demonstrieren, wie man mithilfe von
+Für einen Webcast mit einer Dauer von ca. 30 Minuten möchte ich den Teilnehmenden
+demonstrieren, wie man mithilfe von
 
 ** *RabbitMQ* (Message Bus für die asynchrone Verarbeitung von Nachrichten),
 ** *Docker* (Containerisierung des Message Bus und der Microservices),
@@ -9,20 +10,36 @@ Für einen Webcast mit einer Dauer von ca. 30 Minuten möchte ich den Teilnehmen
 
 eine KI-gestützte Microservice-Architektur aufbaut.
 
-Die Anwendung soll eine Benutzeroberfläche bereitstellen, in der der Name und die Adresse (PLZ, Ort) eines
-Anwenders erfasst werden. Anschliessend ruft die UI einen Microservice auf, der basierend auf dem angegebenen
-Ort relevante Informationen über GPT-4o abfragt (Prompt: „Was kannst du mir zu {Ort} sagen?“). Die Ergebnisse
-werden dann asynchron von einem zweiten Microservice verarbeitet und zurück an die UI gesendet.
+Die Anwendung soll eine Benutzeroberfläche bereitstellen, in der der Name und
+die Adresse (PLZ, Ort) eines Anwenders erfasst werden. Anschliessend ruft die
+UI einen Microservice auf, der basierend auf dem angegebenen Ort relevante
+Informationen über GPT-4o abfragt (Prompt: „Was kannst du mir zu {Ort} sagen?“).
+Die Ergebnisse werden dann asynchron von einem zweiten Microservice verarbeitet
+und zurück an die UI gesendet.
 
-Während die UI auf die Antwort wartet, soll eine drehende Sanduhr als Ladeanimation angezeigt werden.
+Während die UI auf die Antwort wartet, soll eine drehende Sanduhr als
+Ladeanimation angezeigt werden.
 
 Ich benötige folgende Artefakte:
 
 ** Eine *docker-compose.yml* mit der vollständigen Konfiguration
-** Zwei *Microservices* zur asynchronen Kommunikation
-** Eine *Streamlit UI*
-** Für alle Services müssen neben dem Code und der `docker-compose.yml` Datei natürlich auch die notwendigen `Dockerfile` und `requirements.txt` Dateien erstellt werden.
-** Zwei *Diagramme* (Sequenzdiagramm und Komponentendiagramm)
-** Eine ausführliche *Dokumentation* im AsciiDoc-Format für alle Komponenten, die die Abläufe detailliert erläutert
 
-Hinweis: Bei der Erstellung der `docker-compose.yml` Datei darauf achten, dass das Attribut `version` obsolet ist.
+** Zwei *Microservices* zur asynchronen Kommunikation
+
+** Eine *Streamlit UI*
+
+** Für alle Services müssen neben dem Code und der `docker-compose.yml`
+Datei natürlich auch die notwendigen `Dockerfile` und `requirements.txt`
+Dateien erstellt werden.
+
+** Zwei *Diagramme* (Sequenzdiagramm und Komponentendiagramm). Zur Erstellung der
+Diagramme soll die `mermaid`-Syntax zur Anwendung kommen.
+
+** Eine ausführliche *Dokumentation* im AsciiDoc-Format für alle Komponenten,
+die die Abläufe detailliert erläutert
+
+Hinweis: Bei der Erstellung der `docker-compose.yml` Datei darauf achten,
+dass das Attribut `version` obsolet ist.
+
+Hinweis: In einer ersten Version verzichten wir auf die Verwendung von GPT-4o.
+Die Antwort des entsprechenden Microservices wird somit nur simuliert.
