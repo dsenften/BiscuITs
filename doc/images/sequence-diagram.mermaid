@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant U as UI (Streamlit)
+    participant R as RabbitMQ
+    participant M1 as Microservice 1
+    participant M2 as Microservice 2
+
+    Note over U,M2: Initialisierung
+    U->>R: Queue Deklaration (result_queue)
+    M1->>R: Queue Deklaration (address_queue, processing_queue)
+    M2->>R: Queue Deklaration (processing_queue, result_queue)
+
+    Note over U,M2: Nachrichtenfluss
+    U->>R: Sende Adressdaten (address_queue)
+    R->>M1: Empfange Adressdaten
+
+    M1->>M1: Initiale Verarbeitung
+    M1->>R: Sende zur Weiterverarbeitung (processing_queue)
+
+    R->>M2: Empfange Daten zur Weiterverarbeitung
+    M2->>M2: Finale Verarbeitung
+    M2->>R: Sende Endergebnis (result_queue)
+
+    R->>U: Empfange Endergebnis
+    U->>U: Zeige Ergebnis an

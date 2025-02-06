@@ -1,0 +1,41 @@
+graph TB
+    subgraph Docker Environment
+        subgraph Frontend
+            UI[UI - Streamlit App<br/>Port: 8501]
+        end
+
+        subgraph Message Broker
+            RMQ[RabbitMQ<br/>Ports: 5672, 15672]
+        end
+
+        subgraph Backend Services
+            MS1[Microservice 1<br/>Initial Processing]
+            MS2[Microservice 2<br/>Final Processing]
+        end
+
+        %% Connections
+        UI -->|address_queue| RMQ
+        RMQ -->|result_queue| UI
+        RMQ -->|address_queue| MS1
+        MS1 -->|processing_queue| RMQ
+        RMQ -->|processing_queue| MS2
+        MS2 -->|result_queue| RMQ
+
+        %% Environment configurations
+        ENV1[OpenAI API Key]
+        ENV2[RabbitMQ Config]
+        ENV1 -.-> MS1
+        ENV2 -.-> MS1
+        ENV2 -.-> MS2
+    end
+
+    %% Styling
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef broker fill:#bbf,stroke:#333,stroke-width:2px
+    classDef ui fill:#bfb,stroke:#333,stroke-width:2px
+    classDef env fill:#ddd,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5
+
+    class MS1,MS2 service
+    class RMQ broker
+    class UI ui
+    class ENV1,ENV2 env
