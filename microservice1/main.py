@@ -43,9 +43,9 @@ def main():
         address = body.decode()
         prompt = f"Was kannst du mir zu {address} sagen?"
 
-        openai.api_key = "your_api_key_here"
+        openai.api_key = os.environ['OPENAI_API_KEY']
         response = openai.Completion.create(
-            engine="text-davinci-003",
+            engine="gpt-3.5-turbo",
             prompt=prompt,
             max_tokens=150,
             temperature=0.5
