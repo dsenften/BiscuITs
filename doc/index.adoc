@@ -241,14 +241,16 @@ Alle Komponenten werden mit Docker containerisiert. Die Container werden mit
 Docker Compose orchestriert. Die Konfiguration befindet sich in der Datei
 `docker-compose.yml`. Zum Starten der Anwendung muss lediglich der Befehl
 
-[source, yaml]
-----
-include::../docker-compose.yml[]
-----
-
 [source,bash]
 ----
 docker compose up
 ----
 
 ausgeführt werden.
+
+.docker-compose.yml
+[source, yaml]
+----
+include::../docker-compose.yml[]
+----
+
