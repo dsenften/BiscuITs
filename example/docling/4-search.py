@@ -21,7 +21,12 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
+from dotenv import load_dotenv
 import lancedb
+
+# noinspection DuplicatedCode
+load_dotenv()
+
 
 # --------------------------------------------------------------
 # Connect to the database
@@ -43,4 +48,6 @@ table = db.open_table("docling")
 # --------------------------------------------------------------
 
 result = table.search(query="pdf").limit(5)
-result.to_pandas()
+df = result.to_pandas()
+
+print(f"Result: {result}, DataFrame: {df}")
