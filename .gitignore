@@ -1,4 +1,5 @@
 .codebuddy/
+.env
 .idea/
 
-.env
+/example/docling/data/lancedb/docling.lance/
