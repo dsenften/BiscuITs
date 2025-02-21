@@ -61,3 +61,4 @@ chunks = list(chunk_iter)
 
 print(f"Number of chunks: {len(chunks)}")
 print(f"Chunk 0: {chunks[0]}")
+print(f"Chunk 1: {chunks[1]}")
