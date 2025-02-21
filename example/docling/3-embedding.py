@@ -95,6 +95,7 @@ class Chunks(LanceModel):
     metadata: ChunkMetadata
 
 
+# noinspection PyTypeChecker
 table = db.create_table("docling", schema=Chunks, mode="overwrite")
 
 # --------------------------------------------------------------
@@ -134,5 +135,10 @@ table.add(processed_chunks)
 # Load the table
 # --------------------------------------------------------------
 
-table.to_pandas()
-table.count_rows()
+df = table.to_pandas()
+rc = table.count_rows()
+
+print(f"Number of chunks: {len(chunks)}")
+print(f"Chunk 0: {chunks[0]}")
+print(f"Chunk 0 metadata: {chunks[0].meta}")
+print(f"Table: {table}, rows: {rc}, columns: {df.columns}, DataFrame: {df}")
