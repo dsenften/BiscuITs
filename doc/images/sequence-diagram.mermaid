@@ -1,8 +1,8 @@
 sequenceDiagram
     participant U as UI (Streamlit)
     participant R as RabbitMQ
-    participant M1 as Microservice 1
-    participant M2 as Microservice 2
+    participant M1 as Address Analyzer Service
+    participant M2 as Result Processor Service
 
     Note over U,M2: Initialisierung
     U->>R: Queue Deklaration (result_queue)

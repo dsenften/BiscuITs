@@ -35,16 +35,16 @@ Das Komponentendiagramm zeigt:
 1. Die Hauptkomponenten:
   ** Frontend: Streamlit UI-Anwendung (Port 8501)
   ** Message Broker: RabbitMQ (Ports 5672, 15672)
-  ** Backend Services: Microservice 1 und 2
+  ** Backend Services: Address Analyzer Service und Result Processor Service
 
 2. Die Kommunikationswege:
-  ** `address_queue`: UI → RabbitMQ → Microservice 1
-  ** `processing_queue`: Microservice 1 → RabbitMQ → Microservice 2
-  ** `result_queue`: Microservice 2 → RabbitMQ → UI
+  ** `address_queue`: UI → RabbitMQ → Address Analyzer Service
+  ** `processing_queue`: Address Analyzer Service → RabbitMQ → Result Processor Service
+  ** `result_queue`: Result Processor Service → RabbitMQ → UI
 
 3. Konfigurationen:
-  ** OpenAI API Key für Microservice 1
-  ** RabbitMQ-Konfiguration für beide Microservices
+  ** OpenAI API Key für Address Analyzer Service
+  ** RabbitMQ-Konfiguration für beide Services
 
 4. Docker-Umgebung:
   ** Alle Komponenten laufen in Docker-Containern
@@ -65,15 +65,15 @@ Das Sequenzdiagramm zeigt den kompletten Ablauf:
 1. Initialisierungsphase:
   ** Alle Komponenten deklarieren ihre benötigten Queues bei RabbitMQ
   ** UI: `result_queue`
-  ** Microservice 1: `address_queue`, `processing_queue`
-  ** Microservice 2: `processing_queue`, `result_queue`
+  ** Address Analyzer Service: `address_queue`, `processing_queue`
+  ** Result Processor Service: `processing_queue`, `result_queue`
 
 2. Nachrichtenfluss:
   ** Die UI sendet Adressdaten an die `address_queue`
-  ** Microservice 1 empfängt diese und führt die initiale Verarbeitung durch
-  ** Microservice 1 sendet die verarbeiteten Daten an die `processing_queue`
-  ** Microservice 2 empfängt diese Daten, führt die finale Verarbeitung durch
-  ** Microservice 2 sendet das Endergebnis an die `result_queue`
+  ** Address Analyzer Service empfängt diese und führt die initiale Verarbeitung durch
+  ** Address Analyzer Service sendet die verarbeiteten Daten an die `processing_queue`
+  ** Result Processor Service empfängt diese Daten, führt die finale Verarbeitung durch
+  ** Result Processor Service sendet das Endergebnis an die `result_queue`
   ** Die UI empfängt das Endergebnis und zeigt es an
 
 Dieses Diagramm verdeutlicht die asynchrone Kommunikation zwischen den Komponenten
@@ -111,7 +111,7 @@ Ausgehend:
 
 ==== Queues
 
-* `address_queue`: Sendet Adressdaten an Microservices
+* `address_queue`: Sendet Adressdaten an Address Analyzer Service
 * `result_queue`: Empfängt Verarbeitungsergebnisse
 
 ==== Fehlerbehandlung
@@ -127,7 +127,7 @@ Ausgehend:
 include::../ui/app.py[]
 ----
 
-=== Microservice 1
+=== Address Analyzer Service
 
 ==== Beschreibung
 
@@ -165,7 +165,7 @@ Ausgehend:
 ==== Queues
 
 * `address_queue`: Empfängt eingehende Nachrichten
-* `processing_queue`: Sendet verarbeitete Nachrichten an Microservice 2
+* `processing_queue`: Sendet verarbeitete Nachrichten an Result Processor Service
 
 ==== Fehlerbehandlung
 
@@ -173,18 +173,18 @@ Ausgehend:
 * Behandlung von ungültigen JSON-Nachrichten
 * Logging von Verarbeitungsfehlern
 
-.Quellcode zu Microservice 1
+.Quellcode zu Address Analyzer Service
 [source, python]
 ----
 include::../microservice1/main.py[]
 ----
 
-=== Microservice 2
+=== Result Processor Service
 
 ==== Beschreibung
 
 Zweiter Microservice in der Verarbeitungskette für Adressdaten.
-Empfängt vorverarbeitete Daten von Microservice 1, führt weitere Verarbeitung
+Empfängt vorverarbeitete Daten von Address Analyzer Service, führt weitere Verarbeitung
 durch und sendet die Endergebnisse an eine UI-Queue.
 
 ==== Konfiguration
@@ -218,7 +218,7 @@ Details: {initial_result}"
 
 ==== Queues
 
-* `processing_queue`: Empfängt Nachrichten von Microservice 1
+* `processing_queue`: Empfängt Nachrichten von Address Analyzer Service
 * `result_queue`: Sendet Endergebnisse an die UI
 
 ==== Fehlerbehandlung
@@ -228,7 +228,7 @@ Details: {initial_result}"
 * Sauberes Shutdown bei CTRL+C
 
 
-.Quellcode zu Microservice 2
+.Quellcode zu Result Processor Service
 [source, python]
 ----
 include::../microservice2/main.py[]
@@ -253,4 +253,3 @@ ausgeführt werden.
 ----
 include::../docker-compose.yml[]
 ----
-
