@@ -8,34 +8,52 @@ graph TB
             RMQ[RabbitMQ<br/>Ports: 5672, 15672]
         end
 
-        subgraph Backend Services
-            MS1[Address Analyzer Service<br/>Initial Processing]
-            MS2[Result Processor Service<br/>Final Processing]
+        subgraph Document Services
+            DS[Document Service<br/>File Upload]
+            DPS[Document Processor Service<br/>AI Document Analysis]
+        end
+
+        subgraph Address Services
+            AAS[Address Analyzer Service<br/>Address Processing]
+            RPS[Result Processor Service<br/>Final Processing]
         end
 
         %% Connections
-        UI -->|address_queue| RMQ
-        RMQ -->|result_queue| UI
-        RMQ -->|address_queue| MS1
-        MS1 -->|processing_queue| RMQ
-        RMQ -->|processing_queue| MS2
-        MS2 -->|result_queue| RMQ
+        UI -->|address_processing| RMQ
+        UI -->|document_upload| DS
+        RMQ -->|ui_updates| UI
+        
+        RMQ -->|address_processing| AAS
+        AAS -->|processing_result| RMQ
+        RMQ -->|processing_result| RPS
+        RPS -->|ui_updates| RMQ
+        
+        DS -->|document_processing| RMQ
+        RMQ -->|document_processing| DPS
+        DPS -->|processing_result| RMQ
 
         %% Environment configurations
         ENV1[OpenAI API Key]
         ENV2[RabbitMQ Config]
-        ENV1 -.-> MS1
-        ENV2 -.-> MS1
-        ENV2 -.-> MS2
+        ENV3[Docling Integration]
+        ENV1 -.-> AAS
+        ENV1 -.-> DPS
+        ENV2 -.-> AAS
+        ENV2 -.-> RPS
+        ENV2 -.-> DS
+        ENV2 -.-> DPS
+        ENV3 -.-> DPS
     end
 
     %% Styling
-    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef docService fill:#f9f,stroke:#333,stroke-width:2px
+    classDef addressService fill:#f9d,stroke:#333,stroke-width:2px
     classDef broker fill:#bbf,stroke:#333,stroke-width:2px
     classDef ui fill:#bfb,stroke:#333,stroke-width:2px
     classDef env fill:#ddd,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5
 
-    class MS1,MS2 service
+    class DS,DPS docService
+    class AAS,RPS addressService
     class RMQ broker
     class UI ui
-    class ENV1,ENV2 env
+    class ENV1,ENV2,ENV3 env

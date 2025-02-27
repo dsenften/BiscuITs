@@ -1,24 +1,38 @@
 sequenceDiagram
     participant U as UI (Streamlit)
     participant R as RabbitMQ
-    participant M1 as Address Analyzer Service
-    participant M2 as Result Processor Service
+    participant DS as Document Service
+    participant DPS as Document Processor
+    participant AAS as Address Analyzer
+    participant RPS as Result Processor
 
-    Note over U,M2: Initialisierung
-    U->>R: Queue Deklaration (result_queue)
-    M1->>R: Queue Deklaration (address_queue, processing_queue)
-    M2->>R: Queue Deklaration (processing_queue, result_queue)
+    Note over U,RPS: Initialisierung
+    U->>R: Queue Deklaration (ui_updates)
+    DS->>R: Queue Deklaration (document_processing)
+    DPS->>R: Queue Deklaration (document_processing, processing_result)
+    AAS->>R: Queue Deklaration (address_processing, processing_result)
+    RPS->>R: Queue Deklaration (processing_result, ui_updates)
 
-    Note over U,M2: Nachrichtenfluss
-    U->>R: Sende Adressdaten (address_queue)
-    R->>M1: Empfange Adressdaten
+    Note over U,RPS: Adressdaten-Verarbeitung
+    U->>R: Sende Adressdaten (address_processing)
+    R->>AAS: Empfange Adressdaten
+    AAS->>AAS: Verarbeitung der Adresse
+    AAS->>R: Sende Ergebnis (processing_result)
+    R->>RPS: Empfange Adress-Ergebnis
+    RPS->>RPS: Formatierung & Finalisierung
+    RPS->>R: Sende Endergebnis (ui_updates)
+    R->>U: Empfange Adress-Endergebnis
+    U->>U: Zeige Adress-Ergebnis an
 
-    M1->>M1: Initiale Verarbeitung
-    M1->>R: Sende zur Weiterverarbeitung (processing_queue)
-
-    R->>M2: Empfange Daten zur Weiterverarbeitung
-    M2->>M2: Finale Verarbeitung
-    M2->>R: Sende Endergebnis (result_queue)
-
-    R->>U: Empfange Endergebnis
-    U->>U: Zeige Ergebnis an
+    Note over U,RPS: Dokumenten-Verarbeitung
+    U->>DS: Upload Dokument (HTTP)
+    DS->>DS: Speichere Dokument
+    DS->>R: Sende Dokumentinfo (document_processing)
+    R->>DPS: Empfange Dokumentinfo
+    DPS->>DPS: KI-basierte Dokumentanalyse
+    DPS->>R: Sende Analyse-Ergebnis (processing_result)
+    R->>RPS: Empfange Dokument-Ergebnis 
+    RPS->>RPS: Formatierung & Finalisierung
+    RPS->>R: Sende Endergebnis (ui_updates)
+    R->>U: Empfange Dokument-Endergebnis
+    U->>U: Zeige Dokument-Ergebnis an
