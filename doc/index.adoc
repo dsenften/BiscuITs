@@ -176,7 +176,7 @@ Ausgehend:
 .Quellcode zu Address Analyzer Service
 [source, python]
 ----
-include::../microservice1/main.py[]
+include::../src/services/address_analyzer_service/app.py[]
 ----
 
 === Result Processor Service
@@ -231,7 +231,7 @@ Details: {initial_result}"
 .Quellcode zu Result Processor Service
 [source, python]
 ----
-include::../microservice2/main.py[]
+include::../src/services/result_processor_service/app.py[]
 ----
 
 
