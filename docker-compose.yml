@@ -1,20 +1,38 @@
 services:
   rabbitmq:
-    image: rabbitmq:4.0-management
+    image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
 
-  microservice1:
-    build: ./microservice1
+  document_service:
+    build: ./src/services/document_service
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    volumes:
+      - ./uploads:/app/uploads
+
+  document_processor_service:
+    build: ./src/services/document_processor_service
     depends_on:
       - rabbitmq
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
 
-  microservice2:
-    build: ./microservice2
+  address_analyzer_service:
+    build: ./src/services/address_analyzer_service
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+
+  result_processor_service:
+    build: ./src/services/result_processor_service
     depends_on:
       - rabbitmq
     environment:
@@ -26,5 +44,8 @@ services:
     ports:
       - "8501:8501"
     depends_on:
-      - microservice1
-      - microservice2
+      - document_service
+      - result_processor_service
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672

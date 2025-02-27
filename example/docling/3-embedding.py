@@ -115,10 +115,10 @@ processed_chunks = [
                         prov.page_no
                         for item in chunk.meta.doc_items
                         for prov in item.prov
+                        if hasattr(prov, 'page_no') and prov.page_no is not None
                     )
                 )
-            ]
-            or None,
+            ] if chunk.meta.doc_items else [],
             "title": chunk.meta.headings[0] if chunk.meta.headings else None,
         },
     }

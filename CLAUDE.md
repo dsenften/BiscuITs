@@ -23,3 +23,21 @@
 - Microservice architecture with Flask-based services
 - OpenAI for AI integration
 - RabbitMQ for inter-service communication
+
+## Git-Commit Messages
+Vermeide zu ausführliche Beschreibungen oder unnötige Details.
+Beginnen Sie mit einem kurzen Satz in Imperativform, der nicht länger als 50 Zeichen sein sollte und folgende
+Präfixe beinhaltet:
+
+- "fix:" für Fehlerbehebungen
+- "feat:" für neue Funktionen
+- "perf:" für Leistungsverbesserungen
+- "docs:" für Dokumentationsänderungen
+- "style:" für Formatierungsänderungen
+- "refactor:" für Code-Umstrukturierung
+- "test:" für das Hinzufügen fehlender Tests
+- "chore:" für Wartungsaufgaben
+
+Lassen dann eine Leerzeile frei und fahre mit einer ausführlicheren Erklärung fort. Schreibe nur einen Satz für 
+den ersten Teil und nicht mehr als drei oder vier Sätze für die ausführliche Erläuterung, wobei du jeden Satz 
+durch einen Aufzählungspunkt abrennst.
