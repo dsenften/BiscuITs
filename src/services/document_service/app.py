@@ -21,9 +21,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 
+
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def send_to_queue(filename, file_path):
     """Sendet Dokumenteninformationen an RabbitMQ"""
@@ -67,6 +69,7 @@ def send_to_queue(filename, file_path):
         app.logger.error(f"Fehler beim Senden an RabbitMQ: {str(e)}")
         return False
 
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """
@@ -81,24 +84,24 @@ def upload_file():
             'status': 'error',
             'message': 'Keine Datei im Request gefunden'
         }), 400
-    
+
     file = request.files['file']
-    
+
     # Wenn keine Datei ausgewählt wurde
     if file.filename == '':
         return jsonify({
             'status': 'error',
             'message': 'Keine Datei ausgewählt'
         }), 400
-    
+
     # Prüfe ob die Datei erlaubt ist
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
+
         # Speichere die Datei
         file.save(file_path)
-        
+
         # Sende an RabbitMQ
         if send_to_queue(filename, file_path):
             return jsonify({
@@ -113,11 +116,12 @@ def upload_file():
                 'status': 'error',
                 'message': 'Fehler beim Weiterleiten zur Verarbeitung'
             }), 500
-    
+
     return jsonify({
         'status': 'error',
         'message': 'Dateityp nicht erlaubt'
     }), 400
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -128,6 +132,7 @@ def health_check():
         'status': 'healthy',
         'service': 'document_service'
     }), 200
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
