@@ -85,6 +85,93 @@ def send_address(name, address):
         return False
 
 
+def test_send_address():
+    """Testfälle für die send_address Funktion"""
+    import unittest
+    from unittest.mock import patch, MagicMock
+
+    class TestSendAddress(unittest.TestCase):
+        @patch('app.get_rabbitmq_connection')
+        def test_send_address_success(self, mock_get_connection):
+            # Mock-Objekte einrichten
+            mock_connection = MagicMock()
+            mock_channel = MagicMock()
+            mock_connection.channel.return_value = mock_channel
+            mock_get_connection.return_value = mock_connection
+            
+            # Funktion aufrufen
+            result = send_address("Test Kunde", "Teststraße 1, 12345 Teststadt")
+            
+            # Assertions
+            self.assertTrue(result)
+            mock_get_connection.assert_called_once()
+            mock_connection.channel.assert_called_once()
+            mock_channel.queue_declare.assert_any_call(queue='address_processing')
+            mock_channel.queue_declare.assert_any_call(queue='ui_updates')
+            mock_channel.basic_publish.assert_called_once()
+            mock_connection.close.assert_called_once()
+        
+        @patch('app.get_rabbitmq_connection')
+        def test_send_address_with_empty_name(self, mock_get_connection):
+            # Test mit leerem Namen
+            result = send_address("", "Teststraße 1, 12345 Teststadt")
+            # Funktion sollte trotzdem versuchen, Daten zu senden
+            self.assertTrue(result)
+            mock_get_connection.assert_called_once()
+        
+        @patch('app.get_rabbitmq_connection')
+        def test_send_address_with_empty_address(self, mock_get_connection):
+            # Test mit leerer Adresse
+            result = send_address("Test Kunde", "")
+            # Funktion sollte trotzdem versuchen, Daten zu senden
+            self.assertTrue(result)
+            mock_get_connection.assert_called_once()
+        
+        @patch('app.get_rabbitmq_connection', side_effect=Exception("Connection error"))
+        @patch('app.st')
+        def test_send_address_connection_error(self, mock_st, mock_get_connection):
+            # Test mit Verbindungsfehler
+            result = send_address("Test Kunde", "Teststraße 1, 12345 Teststadt")
+            
+            # Assertions
+            self.assertFalse(result)
+            mock_get_connection.assert_called_once()
+            mock_st.error.assert_called_once()
+        
+        @patch('app.get_rabbitmq_connection')
+        def test_send_address_message_structure(self, mock_get_connection):
+            # Mock-Objekte einrichten
+            mock_connection = MagicMock()
+            mock_channel = MagicMock()
+            mock_connection.channel.return_value = mock_channel
+            mock_get_connection.return_value = mock_connection
+            
+            # Funktion aufrufen
+            name = "Test Kunde"
+            address = "Teststraße 1, 12345 Teststadt"
+            send_address(name, address)
+            
+            # Nachrichtenstruktur prüfen
+            call_args = mock_channel.basic_publish.call_args
+            _, kwargs = call_args
+            message = json.loads(kwargs["body"])
+            
+            self.assertEqual(message["name"], name)
+            self.assertEqual(message["address"], address)
+            self.assertIn("timestamp", message)
+            
+    # Weitere Tests könnten hinzugefügt werden
+
+if __name__ == "__main__":
+    # Beim direkten Ausführen dieses Skripts laufen die Tests
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        import unittest
+        unittest.main(argv=['first-arg-is-ignored'])
+    else:
+        main()
+
+
 def wait_for_result(timeout=30):
     """Wartet auf das Ergebnis aus der RabbitMQ-Queue"""
     try:
