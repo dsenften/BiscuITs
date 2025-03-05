@@ -162,15 +162,6 @@ def test_send_address():
             
     # Weitere Tests könnten hinzugefügt werden
 
-if __name__ == "__main__":
-    # Beim direkten Ausführen dieses Skripts laufen die Tests
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        import unittest
-        unittest.main(argv=['first-arg-is-ignored'])
-    else:
-        main()
-
 
 def wait_for_result(timeout=30):
     """Wartet auf das Ergebnis aus der RabbitMQ-Queue"""
@@ -265,5 +256,11 @@ def main():
                 st.info("Die Dokumentverarbeitung ist noch in Entwicklung.")
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    # Beim direkten Ausführen dieses Skripts laufen die Tests
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        import unittest
+        unittest.main(argv=['first-arg-is-ignored'])
+    else:
+        main()
