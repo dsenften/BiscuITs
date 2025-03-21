@@ -59,7 +59,7 @@ def send_address(name, address):
         channel = connection.channel()
 
         # Queues deklarieren
-        channel.queue_declare(queue='address_processing')
+        channel.queue_declare(queue='address_analyzer_input')
         channel.queue_declare(queue='ui_updates')
 
         # Nachricht als JSON erstellen
@@ -72,7 +72,7 @@ def send_address(name, address):
         # Nachricht an die Queue senden
         channel.basic_publish(
             exchange='',
-            routing_key='address_processing',
+            routing_key='address_analyzer_input',
             body=message,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # Nachricht persistent machen
@@ -212,7 +212,7 @@ class TestSendAddress(unittest.TestCase):
         self.assertTrue(result)
         mock_get_connection.assert_called_once()
         mock_connection.channel.assert_called_once()
-        mock_channel.queue_declare.assert_any_call(queue='address_processing')
+        mock_channel.queue_declare.assert_any_call(queue='address_analyzer_input')
         mock_channel.queue_declare.assert_any_call(queue='ui_updates')
         mock_channel.basic_publish.assert_called_once()
         mock_connection.close.assert_called_once()

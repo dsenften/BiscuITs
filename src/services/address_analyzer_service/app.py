@@ -11,8 +11,8 @@ def main():
                 pika.ConnectionParameters(host=os.environ['RABBITMQ_HOST'],
                                           port=int(os.environ['RABBITMQ_PORT'])))
             channel = connection.channel()
-            channel.queue_declare(queue='address_queue')
-            channel.queue_declare(queue='processing_queue')  # Neue Queue für Microservice 2
+            channel.queue_declare(queue='address_analyzer_input')
+            channel.queue_declare(queue='document_processor_input')  # Queue für den Document Processor
             break
         except pika.exceptions.AMQPConnectionError:
             print("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
@@ -32,7 +32,7 @@ def main():
             # Send to microservice 2 for further processing
             channel.basic_publish(
                 exchange='',
-                routing_key='processing_queue',
+                routing_key='document_processor_input',
                 body=json.dumps({
                     'name': name,
                     'address': address,
@@ -48,7 +48,7 @@ def main():
             print(f"Error processing message: {str(e)}")
 
     channel.basic_consume(
-        queue='address_queue',
+        queue='address_analyzer_input',
         on_message_callback=callback,
         auto_ack=True
     )

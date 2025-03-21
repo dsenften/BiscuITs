@@ -44,7 +44,7 @@ def send_to_queue(filename, file_path):
         channel = connection.channel()
 
         # Queue deklarieren
-        channel.queue_declare(queue='document_processing')
+        channel.queue_declare(queue='document_processor_input')
 
         # Nachricht erstellen
         message = {
@@ -56,7 +56,7 @@ def send_to_queue(filename, file_path):
         # Nachricht an die Queue senden
         channel.basic_publish(
             exchange='',
-            routing_key='document_processing',
+            routing_key='result_processor_input',
             body=json.dumps(message),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # macht Nachricht persistent

@@ -51,10 +51,10 @@ Das Komponentendiagramm zeigt:
      *** Result Processor Service (Ergebnisaufbereitung)
 
 2. Die Kommunikationswege:
-  ** `address_processing`: UI → RabbitMQ → Address Analyzer Service
+  ** `address_analyzer_input`: UI → RabbitMQ → Address Analyzer Service
   ** `document_upload`: UI → Document Service (HTTP)
-  ** `document_processing`: Document Service → RabbitMQ → Document Processor Service
-  ** `processing_result`: Address Analyzer/Document Processor → RabbitMQ → Result Processor Service
+  ** `document_processor_input`: Document Service → RabbitMQ → Document Processor Service
+  ** `result_processor_input`: Address Analyzer/Document Processor → RabbitMQ → Result Processor Service
   ** `ui_updates`: Result Processor Service → RabbitMQ → UI
 
 3. Konfigurationen und Integrationen:
@@ -81,26 +81,26 @@ Das Sequenzdiagramm zeigt zwei parallele Abläufe im System - die Adressdatenver
 
 1. **Initialisierungsphase**:
   ** Alle Komponenten deklarieren ihre benötigten Queues bei RabbitMQ:
-     *** UI: `ui_updates` 
-     *** Document Service: `document_processing`
-     *** Document Processor Service: `document_processing`, `processing_result`
-     *** Address Analyzer Service: `address_processing`, `processing_result`
-     *** Result Processor Service: `processing_result`, `ui_updates`
+     *** UI: `ui_updates`, `address_analyzer_input`
+     *** Document Service: `document_processor_input`
+     *** Document Processor Service: `document_processor_input`, `result_processor_input`
+     *** Address Analyzer Service: `address_analyzer_input`, `result_processor_input`
+     *** Result Processor Service: `result_processor_input`, `ui_updates`
 
 2. **Ablauf der Adressdatenverarbeitung**:
-  ** Die UI sendet Adressdaten (Name, Adresse) an die `address_processing`-Queue
+  ** Die UI sendet Adressdaten (Name, Adresse) an die `address_analyzer_input`-Queue
   ** Address Analyzer Service empfängt und verarbeitet diese Daten
-  ** Address Analyzer Service sendet die Ergebnisse an die `processing_result`-Queue
+  ** Address Analyzer Service sendet die Ergebnisse an die `result_processor_input`-Queue
   ** Result Processor Service empfängt die Ergebnisse und bereitet sie für die UI auf
   ** Result Processor Service sendet das Endergebnis als JSON an die `ui_updates`-Queue
   ** Die UI empfängt das Endergebnis und zeigt es in formatierter Form an
 
 3. **Ablauf der Dokumentenverarbeitung**:
   ** Die UI sendet ein Dokument direkt an den Document Service via HTTP
-  ** Document Service speichert das Dokument und sendet Metadaten an die `document_processing`-Queue
+  ** Document Service speichert das Dokument und sendet Metadaten an die `document_processor_input`-Queue
   ** Document Processor Service empfängt die Metadaten und führt KI-gestützte Analysen durch
   ** Document Processor Service extrahiert Inhalte, erstellt Embeddings und generiert Zusammenfassungen
-  ** Document Processor Service sendet die Analyseergebnisse an die `processing_result`-Queue
+  ** Document Processor Service sendet die Analyseergebnisse an die `result_processor_input`-Queue
   ** Result Processor Service empfängt die Ergebnisse und bereitet sie für die UI auf
   ** Result Processor Service sendet das Endergebnis als JSON an die `ui_updates`-Queue
   ** Die UI empfängt das Endergebnis und zeigt es in formatierter Form an
@@ -135,7 +135,7 @@ Dieses Diagramm verdeutlicht die asynchrone, ereignisgesteuerte Kommunikation zw
 * Timeout-Handling (30 Sekunden)
 * HTTP-Verbindung zum Document Service
 
-==== Nachrichtenformat
+==== Nachrichtenformate
 
 Ausgehend (Adressdaten):
 [source,json]
@@ -143,7 +143,18 @@ Ausgehend (Adressdaten):
 {
     "name": "string",
     "address": "string",
-    "timestamp": 1614427200.0
+    "timestamp": "float"
+}
+----
+
+Ausgehend (Dokumentendaten):
+[source,json]
+----
+{
+    "document_id": "string",
+    "file_path": "string",
+    "file_type": "string",
+    "timestamp": "float"
 }
 ----
 
@@ -151,18 +162,22 @@ Eingehend (Verarbeitungsergebnisse):
 [source,json]
 ----
 {
-    "name": "string",
-    "address": "string",
-    "details": "string",
-    "document_id": "string",
-    "timestamp": 1614427200.0,
-    "status": "completed"
+    "type": "string",  // "address" oder "document"
+    "status": "string",  // "completed", "error", "processing"
+    "data": {
+        "name": "string",  // bei Adressdaten
+        "address": "string",  // bei Adressdaten
+        "document_id": "string",  // bei Dokumentendaten
+        "details": "string",
+        "timestamp": "float"
+    },
+    "error": "string"  // optional, bei Fehlern
 }
 ----
 
 ==== Queues
 
-* `address_processing`: Sendet Adressdaten an Address Analyzer Service
+* `address_analyzer_input`: Sendet Adressdaten an Address Analyzer Service
 * `ui_updates`: Empfängt Verarbeitungsergebnisse von allen Services
 
 ==== Fehlerbehandlung
@@ -196,7 +211,7 @@ RABBITMQ_PASSWORD: Passwort für RabbitMQ (Standard: guest)
 OPENAI_API_KEY: API-Schlüssel für OpenAI-Integration (optional)
 ----
 
-==== Nachrichtenformat
+==== Nachrichtenformate
 
 Eingehend:
 [source,json]
@@ -204,7 +219,7 @@ Eingehend:
 {
     "name": "string",
     "address": "string",
-    "timestamp": 1614427200.0
+    "timestamp": "float"
 }
 ----
 
@@ -215,22 +230,22 @@ Ausgehend:
     "name": "string",
     "address": "string",
     "initial_result": "string",
-    "timestamp": 1614427200.0,
+    "timestamp": "float",
     "status": "processed"
 }
 ----
 
 ==== Queues
 
-* `address_processing`: Empfängt eingehende Adressdaten
-* `processing_result`: Sendet verarbeitete Adressdaten an Result Processor Service
+* `address_analyzer_input`: Empfängt eingehende Adressdaten
+* `result_processor_input`: Sendet verarbeitete Adressdaten an Result Processor Service
 
 ==== Funktionen
 
-* Adressvalidierung und -normalisierung
-* Geokodierung von Adressen (Umwandlung in Koordinaten)
-* Adresskomponenten-Extraktion (PLZ, Ort, Straße)
-* Fehlerkorrektur bei ungültigen Adressen
+* Empfängt Adressdaten von `address_analyzer_input`
+* Führt initiale Adressanalyse durch
+* Leitet Ergebnisse an `document_processor_input` weiter
+* Unterstützt optionale KI-basierte Analyse via OpenAI
 
 ==== Fehlerbehandlung
 
@@ -262,7 +277,7 @@ RABBITMQ_USER: Benutzername für RabbitMQ (Standard: guest)
 RABBITMQ_PASSWORD: Passwort für RabbitMQ (Standard: guest)
 ----
 
-==== Nachrichtenformat
+==== Nachrichtenformate
 
 Eingehend (von Address Analyzer Service):
 [source,json]
@@ -271,7 +286,7 @@ Eingehend (von Address Analyzer Service):
     "name": "string",
     "address": "string",
     "initial_result": "string",
-    "timestamp": 1614427200.0,
+    "timestamp": "float",
     "status": "processed"
 }
 ----
@@ -285,7 +300,7 @@ Eingehend (von Document Processor Service):
     "summary": "string",
     "keywords": ["string", "string"],
     "sentiment": "string",
-    "timestamp": 1614427200.0,
+    "timestamp": "float",
     "status": "processed"
 }
 ----
@@ -294,26 +309,30 @@ Ausgehend (an UI):
 [source,json]
 ----
 {
-    "name": "string",
-    "address": "string",
-    "details": "string",
-    "document_id": "string",
-    "timestamp": 1614427200.0,
-    "status": "completed"
+    "type": "string",  // "address" oder "document"
+    "status": "string",  // "completed", "error", "processing"
+    "data": {
+        "name": "string",  // bei Adressdaten
+        "address": "string",  // bei Adressdaten
+        "document_id": "string",  // bei Dokumentendaten
+        "details": "string",
+        "timestamp": "float"
+    },
+    "error": "string"  // optional, bei Fehlern
 }
 ----
 
 ==== Queues
 
-* `processing_result`: Empfängt verarbeitete Daten von allen Processing-Services
+* `result_processor_input`: Empfängt verarbeitete Daten von allen Processing-Services
 * `ui_updates`: Sendet formatierte Endergebnisse an die UI
 
 ==== Funktionen
 
-* Vereinheitlichung von Datenformaten aus verschiedenen Quellen
-* Formatierung und Anreicherung der Ergebnisse für die UI
-* Zeitstempel-Management
-* Qualitätskontrolle und Status-Tracking der Verarbeitungsergebnisse
+* Empfängt Verarbeitungsergebnisse von `result_processor_input`
+* Vereinheitlicht das Format der Ergebnisse
+* Bereitet Daten für die UI-Anzeige auf
+* Sendet formatierte Ergebnisse an `ui_updates`
 
 ==== Fehlerbehandlung
 
@@ -348,7 +367,7 @@ UPLOAD_FOLDER: Verzeichnis zum Speichern der Dokumente (Standard: 'uploads')
 MAX_CONTENT_LENGTH: Maximale Dateigröße in Bytes (Standard: 16MB)
 ----
 
-==== Nachrichtenformat
+==== Nachrichtenformate
 
 Ausgehend:
 [source,json]
@@ -356,7 +375,8 @@ Ausgehend:
 {
     "filename": "string",
     "file_path": "string",
-    "timestamp": "2023-01-01T12:00:00"
+    "file_type": "string",
+    "timestamp": "float"
 }
 ----
 
@@ -410,12 +430,10 @@ OPENAI_API_KEY: OpenAI API-Schlüssel für die KI-Verarbeitung
 
 ==== Funktionen
 
-* Dokument-Extraktion aus PDFs, Textdateien und anderen Formaten
-* Text-Chunking für effiziente Verarbeitung
-* Erstellung von semantischen Embeddings mit OpenAI
-* Generierung von Zusammenfassungen, Schlüsselwörtern und Stimmungsanalysen
-* Persistente Speicherung in Qdrant für Vektorsuchen
-* Weiterleitung der Analyseergebnisse zur weiteren Verarbeitung
+* Empfängt Dokumenteninformationen von `document_processor_input`
+* Führt KI-gestützte Dokumentenanalyse durch
+* Extrahiert Inhalte und generiert Embeddings
+* Sendet Analyseergebnisse an `result_processor_input`
 
 ==== Fehlerbehandlung
 

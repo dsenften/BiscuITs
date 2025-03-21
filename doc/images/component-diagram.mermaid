@@ -19,18 +19,18 @@ graph TB
         end
 
         %% Connections
-        UI -->|address_processing| RMQ
+        UI -->|address_analyzer_input| RMQ
         UI -->|document_upload| DS
         RMQ -->|ui_updates| UI
         
-        RMQ -->|address_processing| AAS
-        AAS -->|processing_result| RMQ
-        RMQ -->|processing_result| RPS
+        RMQ -->|address_analyzer_input| AAS
+        AAS -->|result_processor_input| RMQ
+        RMQ -->|result_processor_input| RPS
         RPS -->|ui_updates| RMQ
         
-        DS -->|document_processing| RMQ
-        RMQ -->|document_processing| DPS
-        DPS -->|processing_result| RMQ
+        DS -->|document_processor_input| RMQ
+        RMQ -->|document_processor_input| DPS
+        DPS -->|result_processor_input| RMQ
 
         %% Environment configurations
         ENV1[OpenAI API Key]

@@ -8,16 +8,16 @@ sequenceDiagram
 
     Note over U,RPS: Initialisierung
     U->>R: Queue Deklaration (ui_updates)
-    DS->>R: Queue Deklaration (document_processing)
-    DPS->>R: Queue Deklaration (document_processing, processing_result)
-    AAS->>R: Queue Deklaration (address_processing, processing_result)
-    RPS->>R: Queue Deklaration (processing_result, ui_updates)
+    DS->>R: Queue Deklaration (document_processor_input)
+    DPS->>R: Queue Deklaration (document_processor_input, result_processor_input)
+    AAS->>R: Queue Deklaration (address_analyzer_input, result_processor_input)
+    RPS->>R: Queue Deklaration (result_processor_input, ui_updates)
 
     Note over U,RPS: Adressdaten-Verarbeitung
-    U->>R: Sende Adressdaten (address_processing)
+    U->>R: Sende Adressdaten (address_analyzer_input)
     R->>AAS: Empfange Adressdaten
     AAS->>AAS: Verarbeitung der Adresse
-    AAS->>R: Sende Ergebnis (processing_result)
+    AAS->>R: Sende Ergebnis (result_processor_input)
     R->>RPS: Empfange Adress-Ergebnis
     RPS->>RPS: Formatierung & Finalisierung
     RPS->>R: Sende Endergebnis (ui_updates)
@@ -27,10 +27,10 @@ sequenceDiagram
     Note over U,RPS: Dokumenten-Verarbeitung
     U->>DS: Upload Dokument (HTTP)
     DS->>DS: Speichere Dokument
-    DS->>R: Sende Dokumentinfo (document_processing)
+    DS->>R: Sende Dokumentinfo (document_processor_input)
     R->>DPS: Empfange Dokumentinfo
     DPS->>DPS: KI-basierte Dokumentanalyse
-    DPS->>R: Sende Analyse-Ergebnis (processing_result)
+    DPS->>R: Sende Analyse-Ergebnis (result_processor_input)
     R->>RPS: Empfange Dokument-Ergebnis 
     RPS->>RPS: Formatierung & Finalisierung
     RPS->>R: Sende Endergebnis (ui_updates)

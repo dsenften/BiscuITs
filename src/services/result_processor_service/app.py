@@ -36,7 +36,7 @@ def main():
                     )
                 ))
             channel = connection.channel()
-            channel.queue_declare(queue='processing_result')  # Queue von der Verarbeitung
+            channel.queue_declare(queue='result_processor_input')  # Queue für eingehende Verarbeitungsergebnisse
             channel.queue_declare(queue='ui_updates')  # Queue für UI
             logger.info("RabbitMQ-Verbindung erfolgreich hergestellt")
             break
@@ -107,7 +107,7 @@ def main():
             )
 
     channel.basic_consume(
-        queue='processing_result',
+        queue='result_processor_input',
         on_message_callback=callback,
         auto_ack=True
     )
