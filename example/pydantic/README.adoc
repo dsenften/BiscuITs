@@ -1,0 +1,232 @@
+= Pydantic KI-Agenten & Model Context Protocol (MCP) Tutorial
+:author: Daniel Senften
+:email: daniel.senften@talent-factory.ch.ch
+:revnumber: 1.0
+:revdate: {localdate}
+:doctype: book
+:toc: left
+:sectnums:
+:sectnumlevels: 2
+:imagesdir: images
+:source-highlighter: highlight.js
+:icons: font
+:title-page:
+:pdf-page-size: A4
+:toc-title: Inhaltsverzeichnis
+
+Dieses Tutorial führt Schritt für Schritt durch den Aufbau, die Anwendung und die Erweiterung von KI-Agenten mit Pydantic und dem Model Context Protocol (MCP). Es richtet sich an Studierende und Praktiker, die moderne LLM-basierte Agenten entwickeln und verstehen möchten.
+
+== Einleitung
+
+Künstliche Intelligenz (KI) und Large Language Models (LLMs) sind heute zentrale Bausteine moderner Softwareentwicklung. Damit LLMs nicht nur Texte generieren, sondern auch gezielt Aufgaben erledigen, werden sie oft in sogenannte Agenten eingebettet. Diese Agenten können mit externer Software, Datenbanken oder Webdiensten interagieren. Das Framework `pydantic_ai` bietet eine elegante Möglichkeit, solche Agenten in Python zu entwickeln.
+
+Ein zentrales Konzept ist das Model Context Protocol (MCP): Es ermöglicht, verschiedene Tools und Datenquellen modular und sicher an LLMs anzubinden. MCP-Server kapseln dabei die jeweilige Funktionalität und machen sie für das LLM über ein einheitliches Interface nutzbar.
+
+Dieses Tutorial behandelt:
+
+- Grundlagen eines Pydantic-Agenten
+- Logging und Überwachung
+- Integration von MCP-Servern (Fetch, Postgres, Riza)
+- Praktische Beispiele und Tipps
+- Übersicht und Sequenzdiagramme (Mermaid)
+
+== Grundlagen: Ein einfacher Agent
+
+Ein Agent ist ein Programm, das Nachrichten an ein LLM sendet, die Antwort verarbeitet und ggf. weitere Aktionen auslöst. Die einfachste Form ist ein Chatbot, der mit dem Benutzer interagiert und die Unterhaltung speichert.
+
+[source,python]
+----
+from dotenv import load_dotenv
+from pydantic_ai import Agent
+
+load_dotenv()
+
+agent = Agent(model='anthropic:claude-3-5-sonnet-latest')
+
+async def main():
+    result = await agent.run('Hallo!')
+    while True:
+        print(f'\n{result.data}')
+        user_input = input('\n> ')
+        result = await agent.run(
+            user_input,
+            message_history=result.new_messages())
+----
+
+Dieses Skript lädt zunächst Umgebungsvariablen (z.B. API-Schlüssel) und initialisiert dann einen Agenten mit dem gewünschten LLM-Modell. Im Hauptprogramm wird eine Unterhaltung gestartet: Zuerst wird eine Begrüßung gesendet, dann kann der Benutzer beliebig viele Nachrichten eingeben. Der Agent gibt jeweils die Antwort des LLM aus und verwaltet die Nachrichtenhistorie, sodass der Kontext für das Modell erhalten bleibt.
+
+Solche Agenten sind die Basis für Chatbots, Assistenten oder Automatisierungstools, die auf LLMs setzen.
+
+== Logging & Überwachung mit Logfire
+
+Gerade bei KI-Anwendungen ist es wichtig, die Abläufe und Ergebnisse nachvollziehen zu können. Das Logging-Framework `logfire` ermöglicht es, alle Anfragen und Antworten des Agenten zu überwachen und zu analysieren. Dies ist besonders hilfreich für das Debugging und die Optimierung von Prompts oder Systemanweisungen.
+
+[source,python]
+----
+import logfire, os
+from pydantic_ai import Agent
+
+logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True)
+----
+
+Mit `instrument=True` werden alle Interaktionen des Agenten automatisch geloggt. Die Logfire-Konfiguration erfolgt über einen API-Token, der meist in einer `.env`-Datei gespeichert ist.
+
+== Einführung: Model Context Protocol (MCP)
+
+Das Model Context Protocol (MCP) ist ein Standard, um LLMs mit externen Tools und Datenquellen zu verbinden. MCP-Server kapseln spezifische Funktionalitäten (z.B. Webscraping, Datenbankzugriffe, Code-Ausführung) und bieten sie über ein einheitliches Interface an. Das LLM kann so gezielt auf externe Ressourcen zugreifen, ohne dass der Agent selbst diese Funktionalität implementieren muss.
+
+MCP-Server können lokal (als Subprozess) oder remote (z.B. per HTTP) betrieben werden. Sie sind modular: Für jede Aufgabe (Web, Datenbank, Code-Ausführung) gibt es spezialisierte Server. Die Kommunikation erfolgt über ein standardisiertes Protokoll, das von pydantic_ai abstrahiert wird.
+
+=== Übersicht: Architektur
+
+Das folgende Diagramm zeigt den Gesamtaufbau einer typischen LLM-Agenten-Architektur mit MCP:
+
+[mermaid]
+----
+flowchart TD
+    User((Benutzer))
+    Agent["Pydantic Agent"]
+    LLM["LLM (z.B. Claude)"]
+    MCP1["MCP Server: Fetch"]
+    MCP2["MCP Server: Postgres"]
+    MCP3["MCP Server: Riza"]
+    User -->|Eingabe| Agent
+    Agent -->|Prompt| LLM
+    LLM -->|Tool-Call| Agent
+    Agent -->|MCP-Request| MCP1
+    Agent -->|MCP-Request| MCP2
+    Agent -->|MCP-Request| MCP3
+    MCP1 -->|Antwort| Agent
+    MCP2 -->|Antwort| Agent
+    MCP3 -->|Antwort| Agent
+    Agent -->|Antwort| User
+----
+
+Hierbei übernimmt der Agent die Vermittlerrolle: Er nimmt Benutzereingaben entgegen, leitet sie an das LLM weiter und verarbeitet ggf. Tool-Calls, indem er entsprechende MCP-Server aufruft.
+
+=== Sequenzdiagramm: LLM-Tool-Call mit MCP
+
+Das folgende Sequenzdiagramm illustriert den Ablauf einer typischen LLM-Anfrage mit Tool-Call:
+
+[mermaid]
+----
+sequenceDiagram
+    participant User
+    participant Agent
+    participant LLM
+    participant MCP
+    User->>Agent: Frage stellen
+    Agent->>LLM: Prompt mit Kontext
+    LLM->>Agent: Antwort + Tool-Call (MCP)
+    Agent->>MCP: Anfrage (z.B. fetch, DB)
+    MCP-->>Agent: Ergebnis
+    Agent->>User: Antwort mit Ergebnis
+----
+
+== Praxis: Verschiedene MCP-Server nutzen
+
+Im Folgenden werden verschiedene MCP-Server vorgestellt. Jeder Server erweitert den Agenten um bestimmte Fähigkeiten – etwa das Auslesen von Webseiten, SQL-Datenbankzugriffe oder die Ausführung von Code.
+
+=== Fetch MCP Server
+
+Der Fetch-Server ermöglicht es dem Agenten, Webinhalte (z.B. HTML-Seiten) gezielt abzurufen und für das LLM aufzubereiten. Das ist besonders nützlich, wenn das LLM aktuelle Informationen aus dem Internet benötigt.
+
+[source,python]
+----
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
+
+fetch_server = MCPServerStdio('python', ["-m", "mcp_server_fetch"])
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[fetch_server])
+----
+
+Der Fetch-Server wird hier als Subprozess gestartet. Das LLM kann dann in seiner Antwort einen Tool-Call generieren (z.B. "Hole mir den Inhalt von https://example.com"), den der Agent automatisch an den Fetch-Server weiterleitet. Die Antwort (z.B. der extrahierte Text) wird dem LLM zurückgegeben.
+
+=== Postgres MCP Server
+
+Mit dem Postgres-Server kann das LLM direkt SQL-Abfragen gegen eine Datenbank stellen. Dies ist ideal für datengetriebene KI-Anwendungen, etwa für Reporting, Datenanalyse oder Automatisierung.
+
+[source,python]
+----
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
+
+postgres_server = MCPServerStdio(
+    'docker',
+    args=[
+        "run",
+        "-i",
+        "--rm",
+        "mcp/postgres",
+        "postgresql://postgres:admin@host.docker.internal:5432/test"
+    ])
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[postgres_server])
+----
+
+Hier wird der MCP-Server in einem Docker-Container gestartet. Das LLM kann dann SQL-Queries formulieren, die der Agent an den Server weiterleitet. Die Ergebnisse werden zurückgegeben und in die LLM-Antwort integriert.
+
+=== Riza MCP Server (Remote Code Interpreter)
+
+Der Riza-Server stellt eine Umgebung bereit, in der das LLM Python-Code ausführen kann (z.B. für komplexe Berechnungen, Datenanalysen oder Visualisierungen). Die Kommunikation erfolgt hier über HTTP zu einem externen Dienst.
+
+[source,python]
+----
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerHTTP
+
+riza_server = MCPServerHTTP(
+    url=f'https://mcp.riza.io/code-interpreter?secret={{os.getenv('RIZA_TOKEN')}}')
+
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[riza_server])
+----
+
+Dadurch kann das LLM Aufgaben lösen, die über reine Textgenerierung hinausgehen – etwa das Parsen von Daten, das Erstellen von Diagrammen oder das Ausführen von Simulationen.
+
+== Best Practices & Tipps
+
+- Verwende `.env`-Dateien, um sensible Daten wie API-Keys und Tokens sicher zu speichern und nicht im Code zu hinterlegen.
+- Nutze `async with agent.run_mcp_servers()` für die automatische Verwaltung und das sichere Starten/Stoppen von MCP-Servern.
+- Übergebe bei jedem Aufruf die Nachrichtenhistorie (`message_history`), damit der Kontext für das LLM erhalten bleibt.
+- Für Logging und Debugging empfiehlt sich immer `instrument=True` und die Nutzung von Logfire.
+- Baue eigene MCP-Server für Spezialaufgaben, um das LLM gezielt zu erweitern.
+- Teste Tool-Calls und Prompts iterativ, um optimale Ergebnisse zu erzielen.
+
+== Selbständige Aufgaben für Studierende
+
+Um das Gelernte zu vertiefen und die Möglichkeiten von MCP-Servern zu erkunden, bearbeiten Sie bitte die folgenden Aufgaben. Nutzen Sie dazu auch die Übersicht und Dokumentation weiterer MCP-Server unter https://github.com/modelcontextprotocol/servers
+
+=== Aufgabe 1: Eigener Web-Scraping-Agent mit dem Fetch-Server
+
+Erstellen Sie einen eigenen Agenten, der in der Lage ist, gezielt Informationen von einer beliebigen Webseite zu extrahieren. Nutzen Sie dazu den Fetch-MCP-Server. Beispiel: Lassen Sie den Agenten die Überschrift und den ersten Absatz der Wikipedia-Startseite auslesen und im Terminal anzeigen.
+
+*Hinweis:* Experimentieren Sie mit verschiedenen Prompts, um gezielt bestimmte Inhalte auszulesen.
+
+=== Aufgabe 2: Anbindung eines weiteren MCP-Servers (z.B. CSV, Pinecone)
+
+Wählen Sie einen weiteren MCP-Server aus der Liste unter https://github.com/modelcontextprotocol/servers aus (z.B. für CSV-Analyse oder Pinecone-Vektordatenbanken). Binden Sie diesen Server in Ihren Agenten ein und demonstrieren Sie eine Beispielabfrage (z.B. Analyse einer CSV-Datei oder Suche in einer Vektordatenbank).
+
+*Hinweis:* Achten Sie auf die jeweilige Server-Dokumentation und passen Sie die Agent-Konfiguration entsprechend an. Für CSV-Dateien siehe das Beispiel in den Musterlösungen.
+
+=== Aufgabe 3: Erweiterung – Eigener MCP-Server (Mini-Projekt)
+
+Konzipieren und implementieren Sie einen eigenen einfachen MCP-Server, der eine nützliche Funktion bereitstellt (z.B. Umrechnung von Währungen, Zugriff auf eine öffentliche API, einfache Bildbearbeitung). Binden Sie diesen MCP-Server in Ihren Agenten ein und zeigen Sie, wie das LLM über den Agenten auf diese Funktion zugreifen kann.
+
+*Hinweis:* Nutzen Sie als Vorlage die Beispielserver im GitHub-Repository und dokumentieren Sie die Schnittstelle Ihres Servers.
+
+== Weiterführende Links
+
+- https://github.com/modelcontextprotocol/servers
+- https://github.com/pydantic-ai/pydantic-ai
+- https://docs.riza.io/getting-started/mcp-servers

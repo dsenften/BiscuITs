@@ -1,0 +1,139 @@
+= Musterlösungen zu den MCP-Aufgaben
+:author: Daniel Senften
+:email: daniel.senften@talent-factory.ch.ch
+:revnumber: 1.0
+:revdate: {localdate}
+:sectnums:
+:toc:
+
+== Lösung zu Aufgabe 1: Web-Scraping-Agent mit Fetch-Server
+
+[source,python]
+----
+from dotenv import load_dotenv
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
+
+load_dotenv()
+fetch_server = MCPServerStdio('python', ["-m", "mcp_server_fetch"])
+
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[fetch_server]
+)
+
+async def main():
+    async with agent.run_mcp_servers():
+        # Prompt: Hole Überschrift und ersten Absatz der Wikipedia-Startseite
+        prompt = (
+            "Bitte rufe https://de.wikipedia.org/wiki/Wikipedia:Hauptseite "
+            "ab und gib mir die Überschrift und den ersten Absatz aus."
+        )
+        result = await agent.run(prompt)
+        print(result.data)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+----
+
+== Lösung zu Aufgabe 2: Anbindung eines weiteren MCP-Servers (Beispiel: CSV-Server)
+
+Angenommen, du möchtest einen CSV-MCP-Server anbinden (siehe https://github.com/modelcontextprotocol/servers – dort gibt es einen CSV-Server):
+
+[source,python]
+----
+from dotenv import load_dotenv
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
+
+load_dotenv()
+csv_server = MCPServerStdio('python', ["-m", "mcp_server_csv"])
+
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[csv_server]
+)
+
+async def main():
+    async with agent.run_mcp_servers():
+        # Prompt: Analysiere eine CSV-Datei (Pfad anpassen!)
+        prompt = (
+            "Analysiere die Datei ./beispiel.csv und gib mir die Summe der Werte in der Spalte 'Umsatz' an."
+        )
+        result = await agent.run(prompt)
+        print(result.data)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+----
+
+TIP: Lege eine Beispiel-CSV-Datei (`beispiel.csv`) im gleichen Verzeichnis ab, z.B.:
+
+ Name,Umsatz
+ Alice,100
+ Bob,200
+ Carol,150
+
+Der CSV-Server ist im MCP-Repository dokumentiert und kann lokal gestartet werden.
+
+== Lösung zu Aufgabe 3: Eigenen MCP-Server entwickeln und anbinden
+
+Beispiel: Ein einfacher MCP-Server, der Währungen umrechnet (Mini-Projekt).
+
+=== 1. MCP-Server (currency_server.py)
+[source,python]
+----
+import sys
+import json
+
+def convert(amount, from_currency, to_currency):
+    # Dummy-Kurse für Demo-Zwecke
+    rates = {'EUR': 1.0, 'USD': 1.1, 'CHF': 0.98}
+    return amount * rates[to_currency] / rates[from_currency]
+
+for line in sys.stdin:
+    req = json.loads(line)
+    if req.get('action') == 'convert':
+        amount = req['amount']
+        from_cur = req['from']
+        to_cur = req['to']
+        result = convert(amount, from_cur, to_cur)
+        print(json.dumps({'result': result}))
+        sys.stdout.flush()
+----
+
+=== 2. Agenten-Code
+[source,python]
+----
+from dotenv import load_dotenv
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
+
+load_dotenv()
+currency_server = MCPServerStdio('python', ["currency_server.py"])
+
+agent = Agent(
+    model='anthropic:claude-3-5-sonnet-latest',
+    instrument=True,
+    mcp_servers=[currency_server]
+)
+
+async def main():
+    async with agent.run_mcp_servers():
+        # Prompt: Wandle 100 EUR in USD um
+        prompt = (
+            "Bitte rechne 100 EUR in USD um."
+        )
+        result = await agent.run(prompt)
+        print(result.data)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+----
+
+TIP: Für einen produktiven Server solltest du Fehlerbehandlung, Logging und echte Wechselkurse ergänzen.
