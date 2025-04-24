@@ -511,7 +511,7 @@ Die Installation der Abhängigkeiten erfolgt mit Poetry:
 poetry install
 ----
 
-Anschließend können die Services einzeln gestartet werden:
+Anschliessend können die Services einzeln gestartet werden:
 
 [source,bash]
 ----
