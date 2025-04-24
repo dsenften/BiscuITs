@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  puppeteer:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-puppeteer
+    ports:
+      - "9001:8080"
+    restart: unless-stopped
+
+  sequential-thinking:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-sequential-thinking
+    ports:
+      - "9002:8080"
+    restart: unless-stopped
+
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-playwright
+    ports:
+      - "9003:8080"
+    restart: unless-stopped

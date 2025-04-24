@@ -1,0 +1,21 @@
+services:
+  mcp-streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./config:/app/config
+      # Optionale Volumes für die Entwicklung
+      - ./mcp_client.py:/app/mcp_client.py
+      - ./streamlit_integration.py:/app/streamlit_integration.py
+      - ./app.py:/app/app.py
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_HEADLESS=true
+      # Hier können weitere Umgebungsvariablen hinzugefügt werden
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped

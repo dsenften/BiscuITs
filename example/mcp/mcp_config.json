@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "puppeteer": {
+      "url": "http://localhost:9001"
+    },
+    "sequential-thinking": {
+      "url": "http://localhost:9002"
+    },
+    "playwright": {
+      "url": "http://localhost:9003"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+# Generisches Dockerfile für einen MCP-Server (Node.js-basiert)
+FROM node:20-slim
+
+WORKDIR /app
+
+ARG MCP_SERVER_PACKAGE
+
+SHELL ["/bin/bash", "-c"]
+RUN npm install -g "${MCP_SERVER_PACKAGE}"
+
+EXPOSE 8080
+
+ENTRYPOINT ["npx"]
+CMD ["-y", "${MCP_SERVER_PACKAGE}"]

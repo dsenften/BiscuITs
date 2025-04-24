@@ -1,0 +1,30 @@
+{
+  "servers": [
+    {
+      "name": "OpenAI MCP",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "api_key": "",
+      "headers": {},
+      "default": true
+    },
+    {
+      "name": "Anthropic MCP",
+      "url": "https://api.anthropic.com/v1/messages",
+      "api_key": "",
+      "headers": {
+        "anthropic-version": "2023-06-01"
+      },
+      "default": false
+    },
+    {
+      "name": "Lokaler MCP-Server",
+      "url": "http://localhost:8000/api/mcp",
+      "api_key": null,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "default": false
+    }
+  ],
+  "default_server": "OpenAI MCP"
+}

@@ -1,0 +1,19 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Abhängigkeiten installieren
+RUN npm install -g @modelcontextprotocol/server-sequential-thinking
+
+# Lokales package.json erstellen und Express installieren
+RUN echo '{"name": "mcp-proxy", "version": "1.0.0"}' > package.json \
+    && npm install express body-parser
+
+# Proxy-Skript kopieren
+COPY mcp-proxy.js /app/
+
+# Port freigeben
+EXPOSE 8080
+
+# Proxy starten, der mit dem MCP-Server kommuniziert
+CMD ["node", "/app/mcp-proxy.js", "@modelcontextprotocol/server-sequential-thinking"]

@@ -33,7 +33,7 @@ logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
 
 # Follow the steps here to get your Riza remote MCP server URL: https://docs.riza.io/getting-started/mcp-servers
 riza_server = MCPServerHTTP(
-    url=f'https://mcp.riza.io/code-interpreter?secret={os.getenv('RIZA_TOKEN')}')
+    url=f'https://mcp.riza.io/code-interpreter?secret={os.getenv("RIZA_TOKEN")}')
 
 agent = Agent(
     model='anthropic:claude-3-5-sonnet-latest',

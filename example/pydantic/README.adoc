@@ -7,11 +7,11 @@
 :toc: left
 :sectnums:
 :sectnumlevels: 2
-:imagesdir: images
 :source-highlighter: highlight.js
 :icons: font
 :title-page:
 :pdf-page-size: A4
+:figure-caption: Abbildung
 :toc-title: Inhaltsverzeichnis
 
 Dieses Tutorial führt Schritt für Schritt durch den Aufbau, die Anwendung und die Erweiterung von KI-Agenten mit Pydantic und dem Model Context Protocol (MCP). Es richtet sich an Studierende und Praktiker, die moderne LLM-basierte Agenten entwickeln und verstehen möchten.
@@ -34,26 +34,30 @@ Dieses Tutorial behandelt:
 
 Ein Agent ist ein Programm, das Nachrichten an ein LLM sendet, die Antwort verarbeitet und ggf. weitere Aktionen auslöst. Die einfachste Form ist ein Chatbot, der mit dem Benutzer interagiert und die Unterhaltung speichert.
 
+Ein einfacher Agent
 [source,python]
 ----
 from dotenv import load_dotenv
 from pydantic_ai import Agent
 
-load_dotenv()
+load_dotenv() # <1>
 
-agent = Agent(model='anthropic:claude-3-5-sonnet-latest')
+agent = Agent(model='anthropic:claude-3-5-sonnet-latest') # <2>
 
 async def main():
-    result = await agent.run('Hallo!')
+    result = await agent.run('Hallo!') # <3>
     while True:
         print(f'\n{result.data}')
         user_input = input('\n> ')
-        result = await agent.run(
+        result = await agent.run( # <4>
             user_input,
             message_history=result.new_messages())
 ----
 
-Dieses Skript lädt zunächst Umgebungsvariablen (z.B. API-Schlüssel) und initialisiert dann einen Agenten mit dem gewünschten LLM-Modell. Im Hauptprogramm wird eine Unterhaltung gestartet: Zuerst wird eine Begrüßung gesendet, dann kann der Benutzer beliebig viele Nachrichten eingeben. Der Agent gibt jeweils die Antwort des LLM aus und verwaltet die Nachrichtenhistorie, sodass der Kontext für das Modell erhalten bleibt.
+<1> Dieses Skript lädt zunächst Umgebungsvariablen (z.B. API-Schlüssel) und
+<2> initialisiert dann einen Agenten mit dem gewünschten LLM-Modell.
+<3> Im Hauptprogramm wird eine Unterhaltung gestartet: Zuerst wird eine Begrüssung gesendet, dann kann der Benutzer beliebig viele Nachrichten eingeben.
+<4> Der Agent gibt jeweils die Antwort des LLM aus und verwaltet die Nachrichtenhistorie, sodass der Kontext für das Modell erhalten bleibt.
 
 Solche Agenten sind die Basis für Chatbots, Assistenten oder Automatisierungstools, die auf LLMs setzen.
 
@@ -66,17 +70,21 @@ Gerade bei KI-Anwendungen ist es wichtig, die Abläufe und Ergebnisse nachvollzi
 import logfire, os
 from pydantic_ai import Agent
 
-logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
+logfire.configure(token=os.getenv('LOGFIRE_TOKEN')) # <1>
 agent = Agent(
     model='anthropic:claude-3-5-sonnet-latest',
-    instrument=True)
+    instrument=True) # <2>
 ----
 
-Mit `instrument=True` werden alle Interaktionen des Agenten automatisch geloggt. Die Logfire-Konfiguration erfolgt über einen API-Token, der meist in einer `.env`-Datei gespeichert ist.
+<1> Die Logfire-Konfiguration erfolgt über einen API-Token, der meist in einer `.env`-Datei gespeichert ist.
+<2> Mit `instrument=True` werden alle Interaktionen des Agenten automatisch geloggt.
 
 == Einführung: Model Context Protocol (MCP)
 
 Das Model Context Protocol (MCP) ist ein Standard, um LLMs mit externen Tools und Datenquellen zu verbinden. MCP-Server kapseln spezifische Funktionalitäten (z.B. Webscraping, Datenbankzugriffe, Code-Ausführung) und bieten sie über ein einheitliches Interface an. Das LLM kann so gezielt auf externe Ressourcen zugreifen, ohne dass der Agent selbst diese Funktionalität implementieren muss.
+
+.Was ist ein MCP-Server?
+image::../../doc/images/what-is-mcp.gif[MCP-Server, width=80%]
 
 MCP-Server können lokal (als Subprozess) oder remote (z.B. per HTTP) betrieben werden. Sie sind modular: Für jede Aufgabe (Web, Datenbank, Code-Ausführung) gibt es spezialisierte Server. Die Kommunikation erfolgt über ein standardisiertes Protokoll, das von pydantic_ai abstrahiert wird.
 
@@ -111,6 +119,7 @@ Hierbei übernimmt der Agent die Vermittlerrolle: Er nimmt Benutzereingaben entg
 
 Das folgende Sequenzdiagramm illustriert den Ablauf einer typischen LLM-Anfrage mit Tool-Call:
 
+.Seqenzdiagramm - LLM-Tool-Call
 [mermaid]
 ----
 sequenceDiagram

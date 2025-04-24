@@ -6,8 +6,7 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from dotenv import load_dotenv
-import docling
-from docling.core import Document as DoclingDocument
+from docling_core.document import Document as DoclingDocument
 import logging
 
 # Logger konfigurieren
