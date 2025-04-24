@@ -1,0 +1,1209 @@
+= Docling Tutorial: Von der Dokumentenverarbeitung zum Wissenschatbot
+Daniel Senften
+:email: daniel.senften@ffhs.ch
+:doctype: book
+include::locale/attributes-de.adoc[]
+:imagesdir: images/
+:toc: left
+:sectnums:
+:sectnumlevels: 2
+:numbered:
+:source-highlighter: highlight.js
+:icons: font
+:experimental:
+
+== Einleitung
+
+Dieses Tutorial führt Sie durch den kompletten Workflow von Docling, einem leistungsstarken Open-Source-Framework für die Dokumentenverarbeitung und Wissensextraktion. Docling wurde entwickelt, um die Herausforderungen bei der Verarbeitung verschiedener Dokumentformate zu bewältigen und eine einheitliche Repräsentation zu schaffen, die für moderne KI-Anwendungen optimiert ist.
+
+=== Was ist Docling?
+
+Docling ist eine flexible Bibliothek zur Dokumentenverarbeitung, die verschiedene Dokumentformate in ein einheitliches Format umwandelt. Sie verfügt über fortschrittliche Dokumentenverständnisfunktionen, die durch modernste KI-Modelle für Layoutanalyse und Tabellenstrukturerkennung unterstützt werden.
+
+Das System läuft vollständig lokal auf Standardcomputern und ist erweiterbar konzipiert - Entwickler können neue Modelle hinzufügen oder die Pipeline für spezifische Anforderungen anpassen. Es eignet sich besonders für Aufgaben wie Unternehmenssuche, Passagenextraktion und Wissensgewinnung. Mit seinen fortschrittlichen Chunking- und Verarbeitungsfunktionen ist es das ideale Werkzeug, um GenAI-Anwendungen durch RAG-Pipelines (Retrieval Augmented Generation) mit Wissen zu versorgen.
+
+=== Warum Docling für RAG-Anwendungen?
+
+Retrieval Augmented Generation (RAG) hat sich als leistungsstarker Ansatz etabliert, um die Fähigkeiten von Large Language Models (LLMs) mit externem Wissen anzureichern. Docling spielt in diesem Ökosystem eine entscheidende Rolle, indem es:
+
+* Dokumente in ein einheitliches Format umwandelt, das für die weitere Verarbeitung optimiert ist
+* Die Dokumentenstruktur bewahrt, was für das Verständnis des Kontexts entscheidend ist
+* Intelligentes Chunking ermöglicht, das die semantische Integrität von Dokumententeilen erhält
+* Nahtlose Integration mit gängigen Embedding-Modellen und Vektordatenbanken bietet
+* Den gesamten RAG-Workflow von der Dokumentenextraktion bis zur Abfrage unterstützt
+
+=== Was Sie in diesem Tutorial lernen werden
+
+In diesem Tutorial werden wir einen vollständigen RAG-Workflow mit Docling implementieren. Wir werden folgende Schritte durchlaufen:
+
+1. *Dokumentenextraktion*: Umwandlung verschiedener Dokumentformate in ein einheitliches Format
+2. *Chunking*: Intelligente Aufteilung von Dokumenten in sinnvolle Teile
+3. *Embedding*: Umwandlung von Text in numerische Vektoren für semantische Suche
+4. *Vektorsuche*: Implementierung einer effizienten Suche nach relevanten Dokumententeilen
+5. *Chatbot-Integration*: Erstellung eines interaktiven Chatbots, der auf Basis der extrahierten Dokumente antwortet
+
+Jeder Schritt wird detailliert erklärt, mit praktischen Code-Beispielen und Visualisierungen, um das Verständnis zu erleichtern.
+
+== Voraussetzungen
+
+=== Technische Anforderungen
+
+[cols="1,3"]
+|===
+|Software
+|Python 3.8+, OpenAI API Key, Docker (optional)
+
+|Python Pakete
+|docling, lancedb, streamlit, openai, python-dotenv
+
+|Umgebungsvariablen
+|OPENAI_API_KEY
+|===
+
+=== Installation der Abhängigkeiten
+
+Um mit diesem Tutorial zu beginnen, müssen Sie zunächst die erforderlichen Abhängigkeiten installieren. Sie können dies mit pip erledigen:
+
+[source,bash]
+----
+pip install docling lancedb streamlit openai python-dotenv
+----
+
+Alternativ können Sie eine `requirements.txt`-Datei erstellen und alle Abhängigkeiten auf einmal installieren:
+
+[source,bash]
+----
+# Inhalt der requirements.txt
+docling>=0.5.0
+lancedb>=0.3.0
+streamlit>=1.22.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+----
+
+Und dann installieren mit:
+
+[source,bash]
+----
+pip install -r requirements.txt
+----
+
+=== Einrichtung der Umgebungsvariablen
+
+Für die Verwendung der OpenAI API benötigen Sie einen API-Schlüssel. Erstellen Sie eine Datei mit dem Namen `.env` im Stammverzeichnis Ihres Projekts und fügen Sie Ihren API-Schlüssel hinzu:
+
+[source,bash]
+----
+OPENAI_API_KEY=Ihr_API_Schlüssel_hier
+----
+
+[IMPORTANT]
+====
+Stellen Sie sicher, dass Sie die `.env`-Datei zu Ihrer `.gitignore` hinzufügen, um zu verhindern, dass Ihr API-Schlüssel versehentlich in ein öffentliches Repository hochgeladen wird.
+====
+
+=== Projektstruktur
+
+Für dieses Tutorial empfehlen wir die folgende Projektstruktur:
+
+[source,text]
+----
+docling-rag-tutorial/
+├── .env                  # Umgebungsvariablen
+├── requirements.txt      # Abhängigkeiten
+├── 1-extraction.py       # Dokumentenextraktion
+├── 2-chunking.py         # Chunking
+├── 3-embedding.py        # Embedding
+├── 4-search.py           # Suche
+├── 5-chat.py             # Chatbot
+└── data/                 # Verzeichnis für Daten
+    └── lancedb/          # LanceDB Datenbank
+----
+
+== Schritt: Dokumentenextraktion
+
+=== Grundlagen der Dokumentenverarbeitung
+
+Docling ermöglicht die Verarbeitung verschiedener Dokumentformate wie PDF, DOCX, HTML und mehr. Das Herzstück ist der `DocumentConverter`, der Dokumente in ein einheitliches Format verwandelt, das als `DoclingDocument` bezeichnet wird.
+
+==== Unterstützte Dokumentformate
+
+Docling unterstützt eine Vielzahl von Dokumentformaten, darunter:
+
+* *PDF*: Native PDF-Dokumente mit Layouterhaltung
+* *Microsoft Office*: DOCX, XLSX, PPTX (2007+)
+* *Markdown*: Einfacher Text mit Markup
+* *HTML/XHTML*: Webdokumente
+* *Bilder*: PNG, JPEG, TIFF, BMP (mit OCR-Unterstützung)
+* *Spezialformate*: USPTO XML (Patentdokumente), PMC XML (PubMed Central Artikel)
+
+==== Die DoclingDocument-Struktur
+
+Das `DoclingDocument` ist eine hierarchische Repräsentation eines Dokuments, die folgende Elemente enthalten kann:
+
+* Metadaten (Titel, Autoren, Erstellungsdatum)
+* Seitenstruktur mit Layoutinformationen
+* Textblöcke mit Formatierungsinformationen
+* Tabellen mit Zellstruktur
+* Bilder mit Beschriftungen
+* Listen und Aufzählungen
+* Überschriften und Hierarchie
+
+Diese strukturierte Repräsentation ermöglicht es, die semantische Bedeutung und den Kontext von Dokumenteninhalten zu bewahren, was für RAG-Anwendungen entscheidend ist.
+
+=== Praktische Anwendung
+
+Lassen Sie uns nun einen praktischen Blick auf die Dokumentenextraktion mit Docling werfen. Wir werden ein PDF-Dokument und eine HTML-Seite verarbeiten und die Ergebnisse betrachten.
+
+[source,python]
+----
+# 1-extraction.py
+from docling.document_converter import DocumentConverter
+from utils.sitemap import get_sitemap_urls
+
+# Erstellen des Converters
+converter = DocumentConverter()
+
+# --------------------------------------------------------------
+# PDF-Extraktion
+# --------------------------------------------------------------
+
+# Konvertierung eines PDF-Dokuments von einer URL
+result = converter.convert("https://arxiv.org/pdf/2408.09869")
+
+# Zugriff auf das konvertierte Dokument
+document = result.document
+
+# Export in verschiedene Formate
+markdown_output = document.export_to_markdown()
+json_output = document.export_to_dict()
+
+print("PDF erfolgreich in DoclingDocument konvertiert")
+print(f"Anzahl der Seiten: {len(document.pages)}")
+
+# --------------------------------------------------------------
+# HTML-Extraktion
+# --------------------------------------------------------------
+
+# Konvertierung einer HTML-Seite
+result = converter.convert("https://ds4sd.github.io/docling/")
+document = result.document
+markdown_output = document.export_to_markdown()
+
+print("\nHTML erfolgreich in DoclingDocument konvertiert")
+
+# --------------------------------------------------------------
+# Mehrere Seiten über Sitemap extrahieren
+# --------------------------------------------------------------
+
+# Extrahieren aller URLs aus der Sitemap
+sitemap_urls = get_sitemap_urls("https://ds4sd.github.io/docling/")
+print(f"\nGefundene URLs in der Sitemap: {len(sitemap_urls)}")
+
+# Konvertierung aller gefundenen URLs
+conv_results_iter = converter.convert_all(sitemap_urls)
+
+# Sammeln der konvertierten Dokumente
+docs = []
+for result in conv_results_iter:
+    if result.document:
+        document = result.document
+        docs.append(document)
+
+print(f"Erfolgreich konvertierte Dokumente: {len(docs)}")
+----
+
+==== Erklärung des Codes
+
+1. *Initialisierung des DocumentConverter*: Wir erstellen eine Instanz des `DocumentConverter`, der die Hauptschnittstelle für die Dokumentenverarbeitung darstellt.
+
+2. *PDF-Extraktion*: Wir konvertieren ein PDF-Dokument von einer URL und erhalten ein `DoclingDocument`-Objekt, das wir in verschiedene Formate exportieren können.
+
+3. *HTML-Extraktion*: Ähnlich wie bei der PDF-Extraktion konvertieren wir eine HTML-Seite in ein `DoclingDocument`.
+
+4. *Batch-Verarbeitung*: Mit der `convert_all`-Methode können wir mehrere Dokumente gleichzeitig verarbeiten, was besonders nützlich ist, wenn wir eine große Menge an Dokumenten haben.
+
+==== Anpassung der Konvertierungsoptionen
+
+Der `DocumentConverter` bietet verschiedene Optionen zur Anpassung der Konvertierung:
+
+[source,python]
+----
+# Anpassung der Konvertierungsoptionen
+converter = DocumentConverter(
+    # Aktivieren der OCR für Bilder und gescannte PDFs
+    enable_ocr=True,
+    # Sprache für OCR (Standard ist Englisch)
+    ocr_languages=["deu", "eng"],
+    # Maximale Bildgröße für OCR (in Pixeln)
+    max_image_size=4000,
+    # Aktivieren der Tabellenerkennung
+    enable_table_detection=True
+)
+----
+
+=== Visualisierung des Dokumentenextraktionsprozesses
+
+[mermaid]
+----
+graph TD
+    A[URL oder Datei] --> B[DocumentConverter]
+    B --> C[DoclingDocument]
+    C --> D[Markdown-Export]
+    C --> E[JSON-Export]
+    C --> F[HTML-Export]
+    C --> G[Plain Text-Export]
+    
+    subgraph "Dokumentenanalyse"
+    B1[Formatspezifischer Parser] --> B2[Layoutanalyse]
+    B2 --> B3[Tabellenstrukturerkennung]
+    B3 --> B4[Metadatenextraktion]
+    B4 --> B5[Strukturierung]
+    end
+    
+    B --> Dokumentenanalyse
+    Dokumentenanalyse --> C
+----
+
+=== Vorteile der Docling-Dokumentenextraktion
+
+Die Dokumentenextraktion mit Docling bietet mehrere Vorteile gegenüber herkömmlichen Ansätzen:
+
+1. *Einheitliche Repräsentation*: Unabhängig vom Eingabeformat erhalten Sie eine konsistente Dokumentenstruktur.
+
+2. *Strukturerhaltung*: Die semantische Struktur des Dokuments bleibt erhalten, einschließlich Überschriften, Listen und Tabellen.
+
+3. *Layoutverständnis*: Docling versteht das Layout des Dokuments und kann zwischen Haupttext, Überschriften, Fußnoten usw. unterscheiden.
+
+4. *Tabellenextraktion*: Komplexe Tabellen werden korrekt erkannt und strukturiert extrahiert.
+
+5. *Metadatenextraktion*: Informationen wie Titel, Autoren und Erstellungsdatum werden automatisch extrahiert.
+
+6. *Lokale Verarbeitung*: Alle Verarbeitung erfolgt lokal, was für sensible Daten wichtig ist.
+
+7. *Flexibilität*: Die extrahierten Daten können in verschiedene Formate exportiert werden, je nach Anforderung der nachgelagerten Anwendungen.
+
+== Schritt: Chunking
+
+=== Was ist Chunking und warum ist es wichtig?
+
+Chunking ist der Prozess der Aufteilung von Dokumenten in sinnvolle, kleinere Teile (Chunks), die für die weitere Verarbeitung verwendet werden können. Dieser Schritt ist entscheidend für RAG-Anwendungen, da er die Granularität und Relevanz der später abgerufenen Informationen bestimmt.
+
+Bei herkömmlichen Chunking-Methoden wird Text oft einfach nach einer bestimmten Anzahl von Zeichen oder Tokens aufgeteilt, ohne Rücksicht auf die semantische Struktur. Dies kann dazu führen, dass zusammengehörige Informationen getrennt werden oder Kontextinformationen verloren gehen.
+
+==== Die Chunking-Herausforderung
+
+Ein effektives Chunking muss mehrere Herausforderungen bewältigen:
+
+* *Semantische Integrität*: Zusammengehörige Informationen sollten in einem Chunk bleiben.
+* *Größenbeschränkungen*: Chunks müssen innerhalb der Token-Limits der verwendeten Embedding-Modelle liegen.
+* *Kontexterhaltung*: Wichtige Kontextinformationen wie Überschriften sollten erhalten bleiben.
+* *Strukturerhaltung*: Die Struktur von Tabellen, Listen und anderen Elementen sollte bewahrt werden.
+* *Selbstständigkeit*: Jeder Chunk sollte möglichst eigenständig verständlich sein.
+
+=== Docling's Chunking-Ansätze
+
+Docling bietet zwei Hauptansätze für das Chunking:
+
+==== 1. Hierarchischer Chunker (HierarchicalChunker)
+
+Der `HierarchicalChunker` nutzt die Dokumentenstruktur, um natürliche "Gelenke" im Dokument zu erkennen. Anstatt Text blind in feste Größen zu schneiden, erkennt er wichtige Elemente wie Abschnitte, Absätze, Tabellen und Listen und bewahrt deren Integrität.
+
+Vorteile des hierarchischen Chunkers:
+
+* Erhält die Beziehung zwischen Überschriften und ihrem Inhalt
+* Hält zusammengehörige Elemente zusammen (z.B. Elemente in einer Liste)
+* Bewahrt die Struktur von Tabellen und anderen komplexen Elementen
+* Respektiert die natürliche Hierarchie des Dokuments
+
+==== 2. Hybrider Chunker (HybridChunker)
+
+Der `HybridChunker` geht noch einen Schritt weiter. Er beginnt mit den hierarchischen Chunks, führt dann aber zusätzliche Optimierungen durch:
+
+* Er kann Chunks aufteilen, die zu groß für das Embedding-Modell sind
+* Er kann zu kleine Chunks zusammenfügen, um die Effizienz zu verbessern
+* Er arbeitet mit dem spezifischen Tokenizer des verwendeten Sprachmodells, sodass die Chunks perfekt zum gewählten Modell passen
+
+=== Praktische Anwendung
+
+Lassen Sie uns nun sehen, wie wir den HybridChunker in der Praxis einsetzen können:
+
+[source,python]
+----
+# 2-chunking.py
+from docling.chunking import HybridChunker
+from docling.document_converter import DocumentConverter
+from dotenv import load_dotenv
+from openai import OpenAI
+from utils.tokenizer import OpenAITokenizerWrapper
+
+# Umgebungsvariablen laden
+load_dotenv()
+
+# OpenAI-Client initialisieren
+client = OpenAI()
+
+# Tokenizer für OpenAI initialisieren
+tokenizer = OpenAITokenizerWrapper()
+
+# Maximale Token-Anzahl für das Embedding-Modell festlegen
+# text-embedding-3-large hat eine maximale Kontextlänge von 8191 Tokens
+MAX_TOKENS = 8191
+
+# --------------------------------------------------------------
+# Daten extrahieren
+# --------------------------------------------------------------
+
+# Dokument konvertieren
+converter = DocumentConverter()
+result = converter.convert("https://arxiv.org/pdf/2408.09869")
+
+# --------------------------------------------------------------
+# Hybrid Chunking anwenden
+# --------------------------------------------------------------
+
+# HybridChunker initialisieren
+chunker = HybridChunker(
+    # Der Tokenizer wird verwendet, um die Tokenlänge zu berechnen
+    tokenizer=tokenizer,
+    # Maximale Anzahl von Tokens pro Chunk
+    max_tokens=MAX_TOKENS,
+    # Zusammenführen von benachbarten Chunks mit gleichen Überschriften
+    merge_peers=True,
+)
+
+# Chunking durchführen
+chunk_iter = chunker.chunk(dl_doc=result.document)
+chunks = list(chunk_iter)
+
+# Ergebnisse anzeigen
+print(f"Anzahl der erzeugten Chunks: {len(chunks)}")
+print(f"Chunk 0: {chunks[0]}")
+print(f"Chunk 1: {chunks[1]}")
+
+# Metadaten des ersten Chunks anzeigen
+print("\nMetadaten des ersten Chunks:")
+print(f"Titel: {chunks[0].metadata.get('title', 'Kein Titel')}")
+print(f"Seitenzahlen: {chunks[0].metadata.get('page_numbers', [])}")
+print(f"Überschriften: {chunks[0].metadata.get('headers', [])}")
+----
+
+==== Erklärung des Codes
+
+1. *Initialisierung des Tokenizers*: Wir verwenden einen speziellen Tokenizer-Wrapper für OpenAI, der die Anzahl der Tokens in einem Text berechnet.
+
+2. *Konfiguration des HybridChunkers*: Wir erstellen eine Instanz des `HybridChunker` mit den gewünschten Parametern:
+   - `tokenizer`: Der zu verwendende Tokenizer
+   - `max_tokens`: Die maximale Anzahl von Tokens pro Chunk
+   - `merge_peers`: Option zum Zusammenführen benachbarter Chunks mit gleichen Überschriften
+
+3. *Chunking durchführen*: Wir wenden den Chunker auf das DoclingDocument an und erhalten einen Iterator von Chunks.
+
+4. *Ergebnisse analysieren*: Wir betrachten die erzeugten Chunks und ihre Metadaten.
+
+==== Anpassung des Chunking-Prozesses
+
+Der HybridChunker bietet verschiedene Parameter zur Anpassung des Chunking-Prozesses:
+
+[source,python]
+----
+# Erweiterte Konfiguration des HybridChunkers
+chunker = HybridChunker(
+    tokenizer=tokenizer,
+    max_tokens=MAX_TOKENS,
+    merge_peers=True,
+    # Minimale Anzahl von Tokens pro Chunk
+    min_tokens=100,
+    # Überlappung zwischen aufgeteilten Chunks (in Tokens)
+    overlap=20,
+    # Zusammenführen von Listenelementen
+    merge_list_items=True
+)
+----
+
+=== Visualisierung des Chunking-Prozesses
+
+[mermaid]
+----
+graph TD
+    A[DoclingDocument] --> B[HybridChunker]
+    B --> C[Hierarchisches Chunking]
+    C --> D[Token-basierte Optimierung]
+    D --> E[Chunk 1]
+    D --> F[Chunk 2]
+    D --> G[Chunk 3]
+    
+    subgraph "Hierarchisches Chunking"
+    C1[Erkennung von Abschnitten] --> C2[Erkennung von Absätzen]
+    C2 --> C3[Erkennung von Listen und Tabellen]
+    end
+    
+    subgraph "Token-basierte Optimierung"
+    D1[Aufteilung zu großer Chunks] --> D2[Zusammenführung zu kleiner Chunks]
+    D2 --> D3[Metadaten-Anreicherung]
+    end
+----
+
+=== Vorteile des intelligenten Chunkings für RAG-Anwendungen
+
+Das intelligente Chunking von Docling bietet entscheidende Vorteile für RAG-Anwendungen:
+
+1. *Kontexterhaltung*: Durch die Bewahrung der Dokumentenstruktur bleibt der Kontext erhalten, was zu präziseren Antworten führt.
+
+2. *Optimale Chunkgröße*: Die Chunks werden automatisch an die Anforderungen des Embedding-Modells angepasst.
+
+3. *Metadatenanreicherung*: Jeder Chunk enthält wichtige Metadaten wie Überschriften, Seitenzahlen und Quellinformationen.
+
+4. *Semantische Kohärenz*: Zusammengehörige Informationen bleiben zusammen, was die Qualität der Retrieval-Ergebnisse verbessert.
+
+5. *Effizienz*: Durch die Optimierung der Chunkgröße wird die Anzahl der Chunks minimiert, was zu einer effizienteren Verarbeitung führt.
+
+== Schritt: Embedding
+
+=== Was sind Embeddings und warum sind sie wichtig?
+
+Embeddings sind numerische Darstellungen (Vektoren) von Text, die semantische Ähnlichkeiten erfassen. Sie ermöglichen es, Texte basierend auf ihrer Bedeutung zu vergleichen, anstatt nur nach exakten Wörtern oder Phrasen zu suchen. Diese Technologie ist das Herzstück moderner semantischer Suchsysteme und RAG-Anwendungen.
+
+==== Grundprinzipien von Text-Embeddings
+
+Text-Embeddings funktionieren nach folgenden Prinzipien:
+
+* Texte mit ähnlicher Bedeutung werden in ähnliche Vektoren umgewandelt, auch wenn sie unterschiedliche Wörter verwenden.
+* Die Ähnlichkeit zwischen Texten kann durch mathematische Operationen wie die Kosinus-Ähnlichkeit berechnet werden.
+* Die Dimension der Vektoren (z.B. 1536 für OpenAI's text-embedding-3-large) bestimmt, wie viele semantische Merkmale erfasst werden können.
+* Moderne Embedding-Modelle sind durch maschinelles Lernen auf riesigen Textkorpora trainiert und können komplexe semantische Beziehungen erfassen.
+
+==== Embedding-Modelle
+
+Für RAG-Anwendungen stehen verschiedene Embedding-Modelle zur Verfügung:
+
+* *OpenAI*: text-embedding-3-large, text-embedding-3-small, text-embedding-ada-002
+* *Sentence Transformers*: all-MiniLM-L6-v2, all-mpnet-base-v2
+* *Cohere*: embed-english-v3.0, embed-multilingual-v3.0
+* *Lokale Modelle*: BGE, E5, GTE und viele weitere
+
+In diesem Tutorial verwenden wir OpenAI's text-embedding-3-large, das eine ausgezeichnete Leistung bietet und einfach zu verwenden ist.
+
+=== Vektordatenbanken
+
+Um Embeddings effizient zu speichern und abzufragen, benötigen wir eine spezialisierte Datenbank, die für Vektordaten optimiert ist. Diese Datenbanken ermöglichen schnelle Ähnlichkeitssuchen in hochdimensionalen Räumen.
+
+In diesem Tutorial verwenden wir LanceDB, eine leichtgewichtige, eingebettete Vektordatenbank, die sich ideal für lokale Entwicklung eignet. Andere beliebte Optionen sind:
+
+* *Chroma*: Eine eingebettete Vektordatenbank für Python
+* *Pinecone*: Eine verwaltete Cloud-Vektordatenbank
+* *Weaviate*: Eine skalierbare, typisierte Vektordatenbank
+* *Qdrant*: Eine hochleistungsfähige Vektordatenbank
+
+=== Praktische Anwendung
+
+Lassen Sie uns nun sehen, wie wir Embeddings erstellen und in einer Vektordatenbank speichern können:
+
+[source,python]
+----
+# 3-embedding.py
+from typing import List
+
+import lancedb
+from docling.chunking import HybridChunker
+from docling.document_converter import DocumentConverter
+from dotenv import load_dotenv
+from lancedb.embeddings import get_registry
+from lancedb.pydantic import LanceModel, Vector
+from openai import OpenAI
+from utils.tokenizer import OpenAITokenizerWrapper
+
+# Umgebungsvariablen laden
+load_dotenv()
+
+# OpenAI-Client initialisieren
+client = OpenAI()
+
+# Tokenizer für OpenAI initialisieren
+tokenizer = OpenAITokenizerWrapper()
+MAX_TOKENS = 8191  # text-embedding-3-large's maximale Kontextlänge
+
+# --------------------------------------------------------------
+# Daten extrahieren
+# --------------------------------------------------------------
+
+# Dokument konvertieren
+converter = DocumentConverter()
+result = converter.convert("https://arxiv.org/pdf/2408.09869")
+
+# --------------------------------------------------------------
+# Hybrid Chunking anwenden
+# --------------------------------------------------------------
+
+# HybridChunker initialisieren
+chunker = HybridChunker(
+    tokenizer=tokenizer,
+    max_tokens=MAX_TOKENS,
+    merge_peers=True,
+)
+
+# Chunking durchführen
+chunk_iter = chunker.chunk(dl_doc=result.document)
+chunks = list(chunk_iter)
+
+# --------------------------------------------------------------
+# LanceDB-Datenbank und Tabelle erstellen
+# --------------------------------------------------------------
+
+# LanceDB-Datenbank verbinden
+db = lancedb.connect("data/lancedb")
+
+# OpenAI-Embedding-Funktion abrufen
+func = get_registry().get("openai").create(name="text-embedding-3-large")
+
+# Vereinfachtes Metadaten-Schema definieren
+class ChunkMetadata(LanceModel):
+    """
+    Die Felder müssen in alphabetischer Reihenfolge angeordnet sein.
+    Dies ist eine Anforderung der Pydantic-Implementierung.
+    """
+
+    filename: str | None
+    page_numbers: List[int] | None
+    title: str | None
+
+# Hauptschema definieren
+class Chunks(LanceModel):
+    text: str = func.SourceField()
+    vector: Vector(func.ndims()) = func.VectorField()  # type: ignore
+    metadata: ChunkMetadata
+
+# Tabelle erstellen (oder überschreiben, wenn sie bereits existiert)
+table = db.create_table("docling", schema=Chunks, mode="overwrite")
+
+# --------------------------------------------------------------
+# Chunks in die Datenbank einfügen
+# --------------------------------------------------------------
+
+# Liste für die Datensätze erstellen
+records = []
+
+# Jeden Chunk verarbeiten
+for chunk in chunks:
+    # Text aus dem Chunk extrahieren
+    text = chunker.serialize(chunk)
+    
+    # Metadaten extrahieren
+    metadata = {
+        "filename": chunk.metadata.get("filename"),
+        "page_numbers": chunk.metadata.get("page_numbers", []),
+        "title": chunk.metadata.get("title"),
+    }
+    
+    # Datensatz erstellen und zur Liste hinzufügen
+    records.append(Chunks(text=text, metadata=metadata))
+
+# Alle Datensätze in die Tabelle einfügen
+table.add(records)
+
+print(f"Erfolgreich {len(records)} Chunks in die Datenbank eingefügt")
+----
+
+==== Erklärung des Codes
+
+1. *Initialisierung der Vektordatenbank*: Wir verbinden uns mit LanceDB, einer leichtgewichtigen, eingebetteten Vektordatenbank.
+
+2. *Definition des Embedding-Modells*: Wir verwenden OpenAI's text-embedding-3-large, das hochwertige Embeddings erzeugt.
+
+3. *Schema-Definition*: Wir definieren ein Schema für unsere Daten, das den Text, den Vektor und Metadaten enthält.
+
+4. *Verarbeitung der Chunks*: Wir extrahieren den Text und die Metadaten aus jedem Chunk und erstellen Datensätze für die Datenbank.
+
+5. *Einfügen in die Datenbank*: Wir fügen alle Datensätze in die Tabelle ein, wobei die Embeddings automatisch generiert werden.
+
+==== Anpassung des Embedding-Prozesses
+
+Der Embedding-Prozess kann auf verschiedene Weise angepasst werden:
+
+[source,python]
+----
+# Verwendung eines anderen Embedding-Modells
+func = get_registry().get("openai").create(
+    name="text-embedding-3-small",  # Kleineres, schnelleres Modell
+    dimensions=512  # Reduzierte Dimensionalität
+)
+
+# Verwendung eines lokalen Modells mit SentenceTransformers
+from lancedb.embeddings import SentenceTransformerEmbedding
+func = SentenceTransformerEmbedding(model_name="all-MiniLM-L6-v2")
+----
+
+=== Visualisierung des Embedding-Prozesses
+
+[mermaid]
+----
+graph TD
+    A[Chunks] --> B[Embedding-Generator]
+    B --> C[Vektordatenbank]
+    
+    subgraph "Embedding-Prozess"
+    B1[Textvorverarbeitung] --> B2[Tokenisierung]
+    B2 --> B3[Vektorgenerierung]
+    B3 --> B4[Dimensionsreduktion optional]
+    end
+    
+    subgraph "Vektordatenbank"
+    C1[Vektorspeicherung] --> C2[Indexerstellung]
+    C2 --> C3[Optimierung für Ähnlichkeitssuche]
+    end
+    
+    B --> Embedding-Prozess
+    Embedding-Prozess --> C
+----
+
+=== Vorteile von Embeddings für RAG-Anwendungen
+
+Embeddings bieten entscheidende Vorteile für RAG-Anwendungen:
+
+1. *Semantische Suche*: Sie ermöglichen die Suche nach Bedeutung, nicht nur nach Wörtern.
+
+2. *Kontextverständnis*: Sie erfassen den Kontext und die Beziehungen zwischen Wörtern.
+
+3. *Sprachunabhängigkeit*: Moderne Embedding-Modelle funktionieren über verschiedene Sprachen hinweg.
+
+4. *Skalierbarkeit*: Sie ermöglichen die effiziente Suche in großen Dokumentensammlungen.
+
+5. *Anpassungsfähigkeit*: Sie können für verschiedene Domänen und Anwendungsfälle optimiert werden.
+
+=== Herausforderungen und Best Practices
+
+Bei der Arbeit mit Embeddings sollten folgende Herausforderungen und Best Practices beachtet werden:
+
+1. *Modellauswahl*: Die Wahl des richtigen Embedding-Modells hängt von Ihren spezifischen Anforderungen ab (Genauigkeit vs. Geschwindigkeit, Sprachunterstützung, lokale vs. Cloud-Ausführung).
+
+2. *Chunk-Qualität*: Die Qualität der Chunks beeinflusst direkt die Qualität der Embeddings und damit der Suchergebnisse.
+
+3. *Metadaten*: Speichern Sie relevante Metadaten zusammen mit den Embeddings, um den Kontext zu bewahren und die Ergebnisse besser interpretieren zu können.
+
+4. *Dimensionalität*: Höhere Dimensionen können mehr Informationen erfassen, benötigen aber auch mehr Speicherplatz und Rechenleistung.
+
+5. *Aktualisierung*: Planen Sie, wie Sie Ihre Embeddings aktualisieren, wenn sich Ihre Dokumente ändern oder neue hinzukommen.
+
+== Schritt: Suche
+
+=== Wie funktioniert die Vektorsuche?
+
+Die Vektorsuche (auch bekannt als semantische Suche oder Ähnlichkeitssuche) ist eine fortschrittliche Suchmethode, die es ermöglicht, Dokumente basierend auf ihrer Bedeutung anstatt nur auf exakten Wörtern zu finden. Sie ist das Herzstück jeder RAG-Anwendung und ermöglicht es, die relevantesten Informationen für eine Benutzeranfrage zu finden.
+
+==== Grundprinzipien der Vektorsuche
+
+Die Vektorsuche funktioniert nach folgenden Prinzipien:
+
+1. *Embedding der Suchanfrage*: Die Benutzeranfrage wird in einen Vektor umgewandelt, der ihre semantische Bedeutung repräsentiert.
+
+2. *Ähnlichkeitsberechnung*: Die Ähnlichkeit zwischen dem Anfragevektor und allen gespeicherten Vektoren wird berechnet, typischerweise mit der Kosinus-Ähnlichkeit oder der euklidischen Distanz.
+
+3. *Ranking*: Die Ergebnisse werden nach ihrer Ähnlichkeit zur Anfrage sortiert.
+
+4. *Abruf*: Die relevantesten Dokumente oder Chunks werden zurückgegeben.
+
+==== Ähnlichkeitsmaße
+
+Für die Vektorsuche werden verschiedene Ähnlichkeitsmaße verwendet:
+
+* *Kosinus-Ähnlichkeit*: Misst den Kosinus des Winkels zwischen zwei Vektoren. Ein Wert von 1 bedeutet identische Richtung, 0 bedeutet Orthogonalität, und -1 bedeutet entgegengesetzte Richtung.
+
+* *Euklidische Distanz*: Misst den direkten Abstand zwischen zwei Vektoren im Vektorraum. Je kleiner die Distanz, desto ähnlicher sind die Vektoren.
+
+* *Dot-Produkt*: Ein einfacheres Maß, das die Summe der Produkte der entsprechenden Komponenten zweier Vektoren berechnet.
+
+=== Praktische Anwendung
+
+Lassen Sie uns nun sehen, wie wir die Vektorsuche mit LanceDB implementieren können:
+
+[source,python]
+----
+# 4-search.py
+from dotenv import load_dotenv
+import lancedb
+import pandas as pd
+
+# Umgebungsvariablen laden
+load_dotenv()
+
+# --------------------------------------------------------------
+# Mit der Datenbank verbinden
+# --------------------------------------------------------------
+
+# Pfad zur LanceDB-Datenbank
+uri = "data/lancedb"
+db = lancedb.connect(uri)
+
+# --------------------------------------------------------------
+# Tabelle laden
+# --------------------------------------------------------------
+
+# Tabelle öffnen
+table = db.open_table("docling")
+
+# --------------------------------------------------------------
+# Einfache Suche durchführen
+# --------------------------------------------------------------
+
+# Suche nach dem Begriff "pdf"
+result = table.search(query="pdf").limit(5)
+
+# Ergebnisse in ein Pandas DataFrame umwandeln
+df = result.to_pandas()
+
+# Ergebnisse anzeigen
+print("\nSuchergebnisse für 'pdf':")
+for i, row in df.iterrows():
+    print(f"\nErgebnis {i+1}:")
+    print(f"Text: {row['text'][:150]}...")
+    print(f"Relevanz-Score: {row['_distance']:.4f}")
+    print(f"Metadaten: {row['metadata']}")
+
+# --------------------------------------------------------------
+# Erweiterte Suche mit Filtern
+# --------------------------------------------------------------
+
+# Suche mit Filtern (z.B. nur bestimmte Seiten)
+filtered_result = table.search(query="table recognition").where(
+    "metadata.page_numbers[0] > 5"
+).limit(3)
+
+# Ergebnisse anzeigen
+filtered_df = filtered_result.to_pandas()
+print("\nGefilterte Suchergebnisse für 'table recognition' (nur Seiten > 5):")
+for i, row in filtered_df.iterrows():
+    print(f"\nErgebnis {i+1}:")
+    print(f"Text: {row['text'][:150]}...")
+    print(f"Relevanz-Score: {row['_distance']:.4f}")
+    print(f"Seiten: {row['metadata']['page_numbers']}")
+
+# --------------------------------------------------------------
+# Hybride Suche (Vektorsuche + Keyword-Suche)
+# --------------------------------------------------------------
+
+# Hybride Suche mit Vektorsuche und Keyword-Matching
+hybrid_result = table.search(
+    query="document layout analysis",
+    # Zusätzliches Keyword-Matching
+    query_type="hybrid",
+    # Gewichtung zwischen Vektorsuche und Keyword-Matching
+    alpha=0.7
+).limit(3)
+
+# Ergebnisse anzeigen
+hybrid_df = hybrid_result.to_pandas()
+print("\nHybride Suchergebnisse für 'document layout analysis':")
+for i, row in hybrid_df.iterrows():
+    print(f"\nErgebnis {i+1}:")
+    print(f"Text: {row['text'][:150]}...")
+    print(f"Relevanz-Score: {row['_distance']:.4f}")
+----
+
+==== Erklärung des Codes
+
+1. *Verbindung zur Datenbank*: Wir stellen eine Verbindung zur LanceDB-Datenbank her und öffnen die Tabelle mit unseren Embeddings.
+
+2. *Einfache Suche*: Wir führen eine einfache semantische Suche nach dem Begriff "pdf" durch und begrenzen die Ergebnisse auf 5.
+
+3. *Erweiterte Suche mit Filtern*: Wir kombinieren die Vektorsuche mit Filtern, um die Ergebnisse weiter einzuschränken, z.B. nur Chunks von bestimmten Seiten.
+
+4. *Hybride Suche*: Wir kombinieren die Vektorsuche mit Keyword-Matching, um die Präzision zu verbessern, insbesondere für Fachbegriffe oder Namen.
+
+==== Anpassung der Suchparameter
+
+LanceDB bietet verschiedene Möglichkeiten zur Anpassung der Suche:
+
+[source,python]
+----
+# Anpassung der Suchparameter
+result = table.search(
+    query="document understanding",
+    # Anzahl der zurückzugebenden Ergebnisse
+    limit=10,
+    # Distanzmetrik: 'cosine' (Standard), 'l2' (euklidisch), 'dot'
+    metric="cosine",
+    # Nur Ergebnisse mit einer Ähnlichkeit über diesem Schwellenwert
+    score_threshold=0.7,
+    # Suchtyp: 'vector' (Standard), 'keyword', 'hybrid'
+    query_type="hybrid",
+    # Gewichtung zwischen Vektorsuche und Keyword-Matching (nur für 'hybrid')
+    alpha=0.5,
+    # Anzahl der nächsten Nachbarn für die Suche (Effizienzparameter)
+    k=100
+)
+----
+
+=== Visualisierung des Suchprozesses
+
+[mermaid]
+----
+graph TD
+    A[Benutzeranfrage] --> B[Embedding der Anfrage]
+    B --> C[Vektordatenbank]
+    C --> D[Ähnlichkeitsberechnung]
+    D --> E[Ranking der Ergebnisse]
+    E --> F[Relevante Chunks]
+    
+    subgraph "Vektordatenbank"
+    C1[Indizierte Embeddings] --> C2[Metadaten]
+    end
+    
+    subgraph "Erweiterungen"
+    G1[Filter] --> D
+    G2[Keyword-Matching] --> E
+    end
+----
+
+=== Strategien zur Verbesserung der Suchergebnisse
+
+Um die Qualität der Suchergebnisse zu verbessern, können verschiedene Strategien angewendet werden:
+
+1. *Query-Reformulierung*: Umformulierung der Benutzeranfrage, um sie präziser und aussagekräftiger zu machen.
+
+2. *Hybride Suche*: Kombination von Vektorsuche und Keyword-Matching, um die Vorteile beider Ansätze zu nutzen.
+
+3. *Reranking*: Neuordnung der Ergebnisse basierend auf zusätzlichen Kriterien wie Aktualität, Autorität oder Relevanz.
+
+4. *Kontextanreicherung*: Anreicherung der Suchanfrage mit zusätzlichem Kontext aus vorherigen Interaktionen oder Benutzerpräferenzen.
+
+5. *Metadatenfilterung*: Verwendung von Metadaten wie Dokumenttyp, Erstellungsdatum oder Autor, um die Suche einzuschränken.
+
+=== Bewertung der Suchqualität
+
+Die Qualität der Suchergebnisse kann mit verschiedenen Metriken bewertet werden:
+
+1. *Precision*: Anteil der relevanten Dokumente unter den zurückgegebenen Dokumenten.
+
+2. *Recall*: Anteil der zurückgegebenen relevanten Dokumente an allen relevanten Dokumenten.
+
+3. *F1-Score*: Harmonisches Mittel aus Precision und Recall.
+
+4. *Mean Reciprocal Rank (MRR)*: Durchschnittlicher Kehrwert des Rangs des ersten relevanten Dokuments.
+
+5. *Normalized Discounted Cumulative Gain (NDCG)*: Bewertet die Rangfolge der Ergebnisse unter Berücksichtigung ihrer Relevanz.
+
+== Schritt: Chatbot
+
+=== Erstellung eines interaktiven Wissenschatbots
+
+Der letzte Schritt unseres RAG-Workflows ist die Integration aller Komponenten in einen interaktiven Chatbot, der auf Basis des extrahierten Wissens antworten kann. Dieser Chatbot verbindet die Vektorsuche mit einem Large Language Model (LLM), um präzise, quellengestützte Antworten auf Benutzeranfragen zu liefern.
+
+==== Funktionsweise eines RAG-Chatbots
+
+Ein RAG-Chatbot funktioniert nach folgendem Prinzip:
+
+1. *Anfrage entgegennehmen*: Der Benutzer stellt eine Frage oder gibt eine Anweisung ein.
+
+2. *Relevante Informationen abrufen*: Die Anfrage wird verwendet, um relevante Informationen aus der Vektordatenbank abzurufen.
+
+3. *Kontext zusammenstellen*: Die abgerufenen Informationen werden als Kontext für das LLM aufbereitet.
+
+4. *Antwort generieren*: Das LLM generiert eine Antwort basierend auf der Anfrage und dem bereitgestellten Kontext.
+
+5. *Quellenangaben hinzufügen*: Die Antwort wird mit Quellenangaben versehen, um Transparenz und Überprüfbarkeit zu gewährleisten.
+
+==== Vorteile eines RAG-Chatbots
+
+Die Kombination von Retrieval und Generation bietet mehrere Vorteile:
+
+* *Aktualität*: Der Chatbot kann auf aktuelle Informationen zugreifen, die nicht im Trainingsdatensatz des LLM enthalten sind.
+
+* *Genauigkeit*: Durch die Bereitstellung relevanter Informationen werden Halluzinationen reduziert.
+
+* *Transparenz*: Die Quellen der Informationen können angegeben werden, was die Überprüfbarkeit erhöht.
+
+* *Domänenspezifisches Wissen*: Der Chatbot kann auf spezialisiertes Wissen zugreifen, ohne dass das LLM speziell dafür trainiert werden muss.
+
+=== Praktische Anwendung
+
+Lassen Sie uns nun einen interaktiven Chatbot mit Streamlit implementieren, der auf unserem Docling-RAG-System basiert:
+
+[source,python]
+----
+# 5-chat.py
+import streamlit as st
+import lancedb
+from openai import OpenAI
+from dotenv import load_dotenv
+
+# Umgebungsvariablen laden
+load_dotenv()
+
+# OpenAI-Client initialisieren
+client = OpenAI()
+
+
+# LanceDB-Verbindung initialisieren
+@st.cache_resource
+def init_db():
+    """Datenbankverbindung initialisieren.
+
+    Returns:
+        LanceDB-Tabellenobjekt
+    """
+    db = lancedb.connect("data/lancedb")
+    return db.open_table("docling")
+
+
+def get_context(query: str, table, num_results: int = 3) -> str:
+    """Relevanten Kontext für die Anfrage suchen.
+
+    Args:
+        query: Benutzeranfrage
+        table: LanceDB-Tabellenobjekt
+        num_results: Anzahl der zurückzugebenden Ergebnisse
+
+    Returns:
+        str: Zusammengefügter Kontext aus relevanten Chunks mit Quelleninformationen
+    """
+    results = table.search(query).limit(num_results).to_pandas()
+    contexts = []
+
+    for _, row in results.iterrows():
+        # Metadaten extrahieren
+        filename = row["metadata"]["filename"]
+        page_numbers = row["metadata"]["page_numbers"]
+        title = row["metadata"]["title"]
+
+        # Quellenangabe erstellen
+        source_parts = []
+        if filename:
+            source_parts.append(filename)
+        if len(page_numbers) > 0:
+            source_parts.append(f"S. {', '.join(str(p) for p in page_numbers)}")
+
+        source = f"\nQuelle: {' - '.join(source_parts)}"
+        if title:
+            source += f"\nTitel: {title}"
+
+        contexts.append(f"{row['text']}{source}")
+
+    return "\n\n".join(contexts)
+
+
+def get_chat_response(messages, context: str) -> str:
+    """Streaming-Antwort von der OpenAI-API abrufen.
+
+    Args:
+        messages: Chat-Verlauf
+        context: Abgerufener Kontext aus der Datenbank
+
+    Returns:
+        str: Antwort des Modells
+    """
+    system_prompt = f"""Du bist ein hilfreicher Assistent, der Fragen basierend auf dem bereitgestellten Kontext beantwortet.
+Verwende nur die Informationen aus dem Kontext, um Fragen zu beantworten. Wenn du dir unsicher bist oder der Kontext
+nicht die relevanten Informationen enthält, sage das ehrlich.
+
+Kontext:
+{context}
+"""
+
+    # Nachrichten für die API vorbereiten
+    api_messages = [
+        {"role": "system", "content": system_prompt},
+    ]
+    
+    # Chat-Verlauf hinzufügen
+    for message in messages:
+        api_messages.append({"role": message["role"], "content": message["content"]})
+
+    # Antwort vom Modell abrufen
+    response = client.chat.completions.create(
+        model="gpt-4o",  # Oder ein anderes geeignetes Modell
+        messages=api_messages,
+        temperature=0.7,
+        max_tokens=1000,
+    )
+
+    return response.choices[0].message.content
+
+
+# Streamlit-Interface
+st.title("Docling Wissenschaftsbot")
+st.markdown("""
+    Stellen Sie Fragen zu Docling und Dokumentenverarbeitung. Der Bot antwortet basierend auf den extrahierten Informationen.
+    """)
+
+# Datenbankverbindung initialisieren
+table = init_db()
+
+# Chat-Verlauf initialisieren
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Chat-Verlauf anzeigen
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Benutzereingabe
+if prompt := st.chat_input("Ihre Frage:"):
+    # Benutzernachricht anzeigen
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Benutzernachricht zum Verlauf hinzufügen
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Kontext abrufen
+    with st.spinner("Suche nach relevanten Informationen..."):
+        context = get_context(prompt, table, num_results=3)
+    
+    # Antwort generieren
+    with st.chat_message("assistant"):
+        with st.spinner("Generiere Antwort..."):
+            response = get_chat_response(st.session_state.messages, context)
+            st.markdown(response)
+    
+    # Assistentenantwort zum Verlauf hinzufügen
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Seitenleiste mit Informationen
+with st.sidebar:
+    st.header("Informationen")
+    st.markdown("""
+    Dieser Chatbot verwendet Docling und RAG (Retrieval Augmented Generation), um Fragen zu beantworten.
+    
+
+**Funktionsweise:**
+
+1. Ihre Frage wird verwendet, um relevante Informationen aus der Dokumentendatenbank abzurufen.
+2. Die abgerufenen Informationen werden als Kontext an das Sprachmodell übergeben.
+3. Das Sprachmodell generiert eine Antwort basierend auf dem Kontext.
+    """)
+----
+
+==== Erklärung des Codes
+
+1. *Initialisierung*: Wir laden die Umgebungsvariablen und initialisieren den OpenAI-Client sowie die Datenbankverbindung.
+
+2. *Kontextabruf*: Die `get_context`-Funktion ruft relevante Chunks aus der Vektordatenbank ab und bereitet sie als Kontext für das LLM auf, einschließlich Quellenangaben.
+
+3. *Antwortgenerierung*: Die `get_chat_response`-Funktion sendet die Benutzeranfrage zusammen mit dem abgerufenen Kontext an das LLM und erhält eine Antwort.
+
+4. *Streamlit-Interface*: Wir erstellen eine benutzerfreundliche Oberfläche mit Streamlit, die den Chat-Verlauf anzeigt und Benutzereingaben entgegennimmt.
+
+5. *Sitzungsverwaltung*: Wir verwenden `st.session_state`, um den Chat-Verlauf zwischen Interaktionen zu speichern.
+
+==== Anpassung des Chatbots
+
+Der Chatbot kann auf verschiedene Weise angepasst werden:
+
+[source,python]
+----
+# Anpassung des System-Prompts für spezifischere Anweisungen
+system_prompt = f"""Du bist ein Experte für Dokumentenverarbeitung und Docling.
+Beantworte Fragen präzise und technisch korrekt, basierend auf dem bereitgestellten Kontext.
+Füge Codebeispiele hinzu, wenn dies hilfreich ist. Wenn der Kontext nicht ausreicht,
+schlage alternative Ansätze vor oder bitte um weitere Informationen.
+
+Kontext:
+{context}
+"""
+
+# Anpassung der OpenAI-Parameter für verschiedene Antwortcharakteristiken
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=api_messages,
+    temperature=0.3,  # Niedrigere Temperatur für präzisere Antworten
+    max_tokens=1500,  # Längere Antworten erlauben
+    top_p=0.9,  # Nucleus-Sampling für fokussiertere Antworten
+    presence_penalty=0.2,  # Leichte Bestrafung für Wiederholungen
+    frequency_penalty=0.5,  # Stärkere Bestrafung für häufig verwendete Wörter
+)
+
+# Anpassung der Kontextabruf-Funktion für hybride Suche
+def get_enhanced_context(query: str, table, num_results: int = 3) -> str:
+    # Hybride Suche mit Vektorsuche und Keyword-Matching
+    results = table.search(
+        query=query,
+        query_type="hybrid",
+        alpha=0.7,  # Gewichtung zwischen Vektorsuche und Keyword-Matching
+    ).limit(num_results).to_pandas()
+    
+    # Rest der Funktion bleibt gleich...
+----
+
+=== Visualisierung des RAG-Chatbot-Prozesses
+
+[mermaid]
+----
+graph TD
+    A[Benutzerfrage] --> B[Vektordatenbank]
+    B --> C[Relevante Chunks]
+    C --> D[Kontextzusammenstellung]
+    D --> E[LLM mit Kontext]
+    E --> F[Generierte Antwort]
+    F --> G[Antwort mit Quellenangaben]
+    
+    subgraph "Retrieval-Phase"
+    A --> A1[Embedding der Anfrage]
+    A1 --> B
+    B --> B1[Ähnlichkeitssuche]
+    B1 --> C
+    end
+    
+    subgraph "Generation-Phase"
+    D --> E1[System-Prompt + Kontext]
+    E1 --> E2[Chat-Verlauf]
+    E2 --> E
+    end
+----
+
+=== Erweiterte Funktionen für RAG-Chatbots
+
+Um den Chatbot weiter zu verbessern, können verschiedene fortgeschrittene Funktionen implementiert werden:
+
+1. *Multi-Turn-Konversationen*: Berücksichtigung des Gesprächsverlaufs für kontextbezogene Antworten.
+
+2. *Kontext-Fenster*: Dynamische Anpassung der Menge an abgerufenem Kontext basierend auf der Komplexität der Anfrage.
+
+3. *Quellenangaben*: Hinzufügen von klickbaren Links zu den Originalquellen.
+
+4. *Feedback-Schleife*: Sammeln von Benutzerfeedback zur Verbesserung der Suchergebnisse.
+
+5. *Erklärbarkeit*: Anzeigen der relevanten Textpassagen, die für die Antwort verwendet wurden.
+
+6. *Mehrsprachige Unterstützung*: Erweiterung des Chatbots um mehrsprachige Fähigkeiten.
+
+=== Herausforderungen und Best Practices
+
+Bei der Implementierung eines RAG-Chatbots sollten folgende Herausforderungen und Best Practices beachtet werden:
+
+1. *Halluzinationen*: Auch mit RAG können LLMs falsche Informationen generieren. Implementieren Sie Mechanismen zur Überprüfung der Antworten.
+
+2. *Kontextlänge*: Die Menge an Kontext, die an das LLM übergeben werden kann, ist begrenzt. Wählen Sie die relevantesten Chunks sorgfältig aus.
+
+3. *Latenz*: Die Kombination aus Retrieval und Generation kann zu längeren Antwortzeiten führen. Optimieren Sie die Suche und verwenden Sie Caching, wo möglich.
+
+4. *Konsistenz*: Stellen Sie sicher, dass der Chatbot konsistente Antworten gibt, auch wenn unterschiedliche Chunks abgerufen werden.
+
+5. *Datenschutz*: Achten Sie auf den Schutz sensibler Informationen, insbesondere wenn der Chatbot auf interne Dokumente zugreift.
+
+== Fazit
+
+Dieses Tutorial hat Ihnen die Schritte gezeigt, wie Sie von einem Dokument zu einem interaktiven Wissenschatbot kommen. Jeder Schritt baut auf dem vorherigen auf und ermöglicht eine fortschreitende Verbesserung der Wissensextraktion und -nutzung.
+
+== Anhang: Troubleshooting
+
+=== Fehlerbehebung
+
+* **Dokumentenverarbeitung fehlschlägt**
+  - Überprüfen Sie die Datei-URL
+  - Stellen Sie sicher, dass das Dokument lesbar ist
+  - Prüfen Sie die Netzwerkverbindung
+
+* **Chunking-Probleme**
+  - Stellen Sie sicher, dass der Tokenizer korrekt konfiguriert ist
+  - Überprüfen Sie die Token-Limit-Einstellungen
+
+* **Suchprobleme**
+  - Stellen Sie sicher, dass die Vector-Datenbank initialisiert ist
+  - Überprüfen Sie die Suchanfrage auf Relevanz
+
+== Literatur und Weiterführende Links
+
+* [Docling Dokumentation](https://ds4sd.github.io/docling/)
+* [LanceDB Dokumentation](https://lancedb.github.io/lancedb/)
+* [OpenAI API Dokumentation](https://platform.openai.com/docs)
