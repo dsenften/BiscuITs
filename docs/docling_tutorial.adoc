@@ -1,6 +1,6 @@
 = Docling Tutorial: Von der Dokumentenverarbeitung zum Wissenschatbot
 Daniel Senften
-:email: daniel.senften@ffhs.ch
+:email: daniel.senften@talent-factory.ch.ch
 :doctype: book
 include::locale/attributes-de.adoc[]
 :imagesdir: images/
