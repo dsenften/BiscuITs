@@ -1,0 +1,107 @@
+= Tutorial: Sichere Verwendung von Umgebungsvariablen mit python-dotenv
+Daniel Senften
+:email: daniel.senften@talent-factory.ch.ch
+:doctype: book
+include::../locale/attributes-de.adoc[]
+:imagesdir: images/
+:toc: left
+:sectnums:
+:sectnumlevels: 2
+:numbered:
+:source-highlighter: highlight.js
+:icons: font
+
+== Einführung
+
+In der Softwareentwicklung ist es oft notwendig, sensible Informationen wie API-Schlüssel, Datenbank-Passwörter oder
+andere Konfigurationsdetails zu verwenden. Diese direkt im Code zu speichern, ist unsicher und unpraktisch.
+Die `https://pypi.org/project/python-dotenv/[python-dotenv]`-Bibliothek bietet eine elegante Lösung für dieses Problem, indem sie es ermöglicht,
+Umgebungsvariablen aus einer Datei zu laden.
+
+== Schritt 1: Installation von python-dotenv
+
+Zuerst müssen wir `python-dotenv` installieren. Öffnen Sie ein Terminal und führen Sie folgenden Befehl aus:
+
+[source,bash]
+----
+$ $poetry add python-dotenv
+----
+
+== Schritt 2: Erstellen einer .env-Datei
+
+Erstellen Sie im Wurzelverzeichnis Ihres Projekts eine Datei namens `.env`. In dieser Datei speichern wir unsere
+Umgebungsvariablen im Format `SCHLÜSSEL=WERT`. Zum Beispiel:
+
+[source,bash]
+----
+OPENAI_API_KEY=sk-abcdefghijklmnopqrstuvwxyz123456
+DATABASE_URL=postgresql://username:password@localhost/dbname
+DEBUG=True
+----
+
+Wichtig: Fügen Sie die `.env`-Datei zu Ihrer `.gitignore`-Datei hinzu, um zu verhindern, dass sie versehentlich
+in ein öffentliches Repository hochgeladen wird:
+
+[source,bash]
+----
+$ $echo ".env" >> .gitignore
+----
+
+== Schritt 3: Verwendung von dotenv in Ihrem Python-Code
+
+Die [`.env`]-Datei befindet sich üblicherweise im Wurzelverzeichnis unseres Projektes. Damit wir ein Script von jedem
+beliebigen Ort (Unterverzeichnis) aus starten können kann folgende Ergänzung verwendet werden:
+
+[source,python]
+----
+from pathlib import Path
+from dotenv import load_dotenv
+
+def find_project_root(current_path: Path) -> Path:
+    """
+    Rekursiv nach der `pyproject.toml` suchen, um das Projekt-Root-Verzeichnis zu bestimmen.
+    """
+    for parent in current_path.resolve().parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    raise FileNotFoundError("Keine `pyproject.toml`-Datei gefunden.")
+
+# Bestimme das Projekt-Root-Verzeichnis basierend auf der `pyproject.toml`-Datei
+project_root = find_project_root(Path(__file__))
+
+# Lade die .env-Datei aus dem Projekt-Root-Verzeichnis
+dotenv_path = project_root / '.env'
+load_dotenv(dotenv_path)
+----
+
+
+
+Nun können wir `dotenv` in unserem Python-Code verwenden, um die Umgebungsvariablen zu laden und darauf zuzugreifen:
+
+[source,python]
+----
+import os
+
+# Zugriff auf die Umgebungsvariablen
+api_key = os.getenv("OPENAI_API_KEY")
+database_url = os.getenv("DATABASE_URL")
+debug_mode = os.getenv("DEBUG") == "True"
+
+print(f"API Key: {api_key}")
+print(f"Database URL: {database_url}")
+print(f"Debug Mode: {debug_mode}")
+----
+
+
+== Beste Praktiken und Tipps
+
+1. Speichern Sie niemals sensible Informationen direkt im Code.
+2. Fügen Sie immer `.env` zu Ihrer `.gitignore`-Datei hinzu.
+3. Verwenden Sie beschreibende Namen für Ihre Umgebungsvariablen.
+4. Stellen Sie eine Beispiel-`.env`-Datei (z.B. `.env.example`) bereit, die die Struktur zeigt,
+aber keine echten Werte enthält.
+5. In Produktionsumgebungen ziehen Sie die Verwendung von Umgebungsvariablen des Betriebssystems oder
+eines dedizierten Geheimnismanagers in Betracht.
+
+Mit `python-dotenv` können Sie Ihre Anwendungen sicherer und flexibler gestalten,
+indem Sie sensible Informationen und Konfigurationen von Ihrem Code trennen.
