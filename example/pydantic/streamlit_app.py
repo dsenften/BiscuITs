@@ -12,41 +12,43 @@ agent = Agent(
 # Musterfrage und Musterlösung
 max_punkte = 6
 musterfrage = f'''
-Wie funktioniert das Fork- und Exec-Modell in UNIX/MINIX 3 zur Prozesserstellung? Beschreiben Sie den Ablauf bei der 
-Erstellung eines neuen Prozesses und erklären Sie, warum dieser Ansatz für Shell-Pipelines besonders vorteilhaft ist. 
+Erklären Sie den Unterschied zwischen dem Einerkomplement und dem Zweierkomplement bei der Darstellung negativer Zahlen. 
+Welche Vorteile bietet das Zweierkomplement, die dazu geführt haben, dass es in modernen Computern universell 
+eingesetzt wird?  
 ({max_punkte} Punkte)
 '''
 
 musterloesung = '''
-Das Fork- und Exec-Modell in UNIX/MINIX 3 teilt die Prozesserstellung in zwei separate Schritte:
+Einerkomplement (Ones' Complement):
+Beim Einerkomplement wird eine negative Zahl dargestellt, indem alle Bits der entsprechenden positiven Zahl invertiert 
+werden (0 wird zu 1 und 1 wird zu 0). Beispielsweise wird für eine 8-Bit-Darstellung die Zahl +5 (00000101) zu -5 im 
+Einerkomplement (11111010).
 
-1. Fork: Der fork()-Systemaufruf erstellt eine exakte Kopie des aufrufenden Prozesses (Elternprozess). 
-Der neue Prozess (Kindprozess) erhält eine Kopie des Adressraums des Elternprozesses mit identischem Code, 
-Daten, Stack, offenen Dateien und Umgebungsvariablen. Nach dem Fork gibt es zwei fast identische Prozesse, 
-die unabhängig voneinander ausgeführt werden. Der Unterschied besteht darin, dass fork() im Elternprozess 
-die Prozess-ID des Kindes zurückgibt, während im Kindprozess der Rückgabewert 0 ist.
+Zweierkomplement (Two's Complement):
+Im Zweierkomplement wird eine negative Zahl durch Invertieren aller Bits der positiven Zahl und anschliessendes 
+Addieren von 1 dargestellt. Für das obige Beispiel: +5 (00000101) wird zu -5 im Zweierkomplement durch Invertieren 
+(11111010) und Addieren von 1, was 11111011 ergibt. Vorteile des Zweierkomplements, die zu seiner universellen 
+Verwendung geführt haben:
 
-2. Exec: Nach dem Fork kann der Kindprozess den execve()-Systemaufruf (oder eine der Varianten wie execl, execlp, 
-execv, etc.) verwenden, um sein Speicherabbild durch ein neues Programm zu ersetzen. Der exec-Aufruf lädt eine 
-ausführbare Datei in den Adressraum des Prozesses und beginnt mit deren Ausführung. Die Prozess-ID bleibt dabei 
-erhalten.
+Einheitliche Arithmetik: Die Addition und Subtraktion funktionieren mit dem gleichen Hardware-Schaltkreis für 
+positive und negative Zahlen ohne spezielle Behandlung. Im Einerkomplement muss ein End-Around-Carry bei der 
+Addition berücksichtigt werden.
 
-Dieser Ablauf ist für Shell-Pipelines besonders vorteilhaft aus folgenden Gründen:
+Eindeutige Darstellung der Null: Im Zweierkomplement gibt es nur eine Darstellung für Null (00000000), während im 
+Einerkomplement zwei Darstellungen existieren (+0 als 00000000 und -0 als 11111111), was zu Komplikationen führen kann.
 
-- Zwischen Fork und Exec kann der Kindprozess seine Umgebung modifizieren, insbesondere seine Standardein- und 
--ausgabe umleiten. Dies ist entscheidend für Pipelines, bei denen die Ausgabe eines Programms zur Eingabe eines anderen 
-wird. 
+Grösserer Wertebereich: Für n Bits kann das Zweierkomplement Werte von -2^(n-1) bis +2^(n-1)-1 darstellen, während 
+das Einerkomplement nur Werte von -(2^(n-1)-1) bis +(2^(n-1)-1) darstellen kann.
 
-- Der Elternprozess (die Shell) kann nach dem Fork weiterhin ausgeführt werden und auf die Beendigung des Kindes 
-warten oder weitere Kinder erzeugen, um komplexe Pipelines zu bauen.
+Effizientere Hardware-Implementierung: Die Erzeugung des Zweierkomplements kann mit einfachen digitalen Schaltkreisen 
+realisiert werden und erfordert weniger spezielle Fallbehandlungen.
 
-- Für eine Pipeline wie `cmd1 | cmd2` kann die Shell:
-  1. Einen Pipe-Systemaufruf machen, um zwei verbundene Dateideskriptoren zu erstellen
-  2. Forken und im ersten Kind die Standardausgabe auf das Schreibende der Pipe umleiten, dann exec für cmd1 ausführen
-  3. Erneut forken und im zweiten Kind die Standardeingabe auf das Lesende der Pipe umleiten, dann exec für cmd2 ausführen
+Keine Überläufe bei Umwandlungen: Die Umwandlung zwischen positiven und negativen Zahlen verursacht im Zweierkomplement 
+keine Überläufe, was die Implementierung von arithmetischen Operationen vereinfacht.
 
-Diese Flexibilität bei der Dateideskriptor-Manipulation zwischen Fork und Exec ermöglicht die einfache Konstruktion
-beliebig komplexer Pipelines und Umleitungen und ist ein Hauptgrund für die Leistungsfähigkeit und Eleganz der UNIX-Shell.
+Diese Vorteile, insbesondere die einheitliche Arithmetik und die eindeutige Null-Darstellung, haben dazu geführt, 
+dass das Zweierkomplement in praktisch allen modernen Computern für die Darstellung von Ganzzahlen mit Vorzeichen 
+verwendet wird.
 '''
 
 st.title("KI-gestützte Bewertung von Prüfungsantworten")
