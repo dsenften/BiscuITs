@@ -10,45 +10,47 @@ agent = Agent(
     model='anthropic:claude-3-5-sonnet-latest')
 
 # Musterfrage und Musterlösung
-max_punkte = 6
+max_punkte = 8
 musterfrage = f'''
-Erklären Sie den Unterschied zwischen dem Einerkomplement und dem Zweierkomplement bei der Darstellung negativer Zahlen. 
-Welche Vorteile bietet das Zweierkomplement, die dazu geführt haben, dass es in modernen Computern universell 
-eingesetzt wird?  
+Rechnen Sie folgende Zahlen in das angegebene Zahlensystem um. 
 ({max_punkte} Punkte)
+
+- 237₈ → Dezimal
+- 3E9₁₆ → Dezimal
+- 1011010₂ → Dezimal
+- 195₁₀ → Binär
+
+**Wichtig**: Es muss bei jeder Aufgabe der Lösungsweg und nicht nur das Resultat aufgezeigt werden.
 '''
 
 musterloesung = '''
-Einerkomplement (Ones' Complement):
-Beim Einerkomplement wird eine negative Zahl dargestellt, indem alle Bits der entsprechenden positiven Zahl invertiert 
-werden (0 wird zu 1 und 1 wird zu 0). Beispielsweise wird für eine 8-Bit-Darstellung die Zahl +5 (00000101) zu -5 im 
-Einerkomplement (11111010).
+237₈ → Dezimal
+2 × 8² + 3 × 8¹ + 7 × 8⁰
+= 2 × 64 + 3 × 8 + 7 × 1
+= 128 + 24 + 7
+= 159₁₀
 
-Zweierkomplement (Two's Complement):
-Im Zweierkomplement wird eine negative Zahl durch Invertieren aller Bits der positiven Zahl und anschliessendes 
-Addieren von 1 dargestellt. Für das obige Beispiel: +5 (00000101) wird zu -5 im Zweierkomplement durch Invertieren 
-(11111010) und Addieren von 1, was 11111011 ergibt. Vorteile des Zweierkomplements, die zu seiner universellen 
-Verwendung geführt haben:
+3E9₁₆ → Dezimal
+3 × 16² + 14 × 16¹ + 9 × 16⁰
+= 3 × 256 + 14 × 16 + 9 × 1
+= 768 + 224 + 9
+= 1001₁₀
 
-Einheitliche Arithmetik: Die Addition und Subtraktion funktionieren mit dem gleichen Hardware-Schaltkreis für 
-positive und negative Zahlen ohne spezielle Behandlung. Im Einerkomplement muss ein End-Around-Carry bei der 
-Addition berücksichtigt werden.
+1011010₂ → Dezimal
+1 × 2⁶ + 0 × 2⁵ + 1 × 2⁴ + 1 × 2³ + 0 × 2² + 1 × 2¹ + 0 × 2⁰
+= 64 + 0 + 16 + 8 + 0 + 2 + 0
+= 90₁₀
 
-Eindeutige Darstellung der Null: Im Zweierkomplement gibt es nur eine Darstellung für Null (00000000), während im 
-Einerkomplement zwei Darstellungen existieren (+0 als 00000000 und -0 als 11111111), was zu Komplikationen führen kann.
-
-Grösserer Wertebereich: Für n Bits kann das Zweierkomplement Werte von -2^(n-1) bis +2^(n-1)-1 darstellen, während 
-das Einerkomplement nur Werte von -(2^(n-1)-1) bis +(2^(n-1)-1) darstellen kann.
-
-Effizientere Hardware-Implementierung: Die Erzeugung des Zweierkomplements kann mit einfachen digitalen Schaltkreisen 
-realisiert werden und erfordert weniger spezielle Fallbehandlungen.
-
-Keine Überläufe bei Umwandlungen: Die Umwandlung zwischen positiven und negativen Zahlen verursacht im Zweierkomplement 
-keine Überläufe, was die Implementierung von arithmetischen Operationen vereinfacht.
-
-Diese Vorteile, insbesondere die einheitliche Arithmetik und die eindeutige Null-Darstellung, haben dazu geführt, 
-dass das Zweierkomplement in praktisch allen modernen Computern für die Darstellung von Ganzzahlen mit Vorzeichen 
-verwendet wird.
+195₁₀ → Binär
+195 ÷ 2 = 97 mit Rest 1
+97 ÷ 2 = 48 mit Rest 1
+48 ÷ 2 = 24 mit Rest 0
+24 ÷ 2 = 12 mit Rest 0
+12 ÷ 2 = 6 mit Rest 0
+6 ÷ 2 = 3 mit Rest 0
+3 ÷ 2 = 1 mit Rest 1
+1 ÷ 2 = 0 mit Rest 1
+= 11000011₂
 '''
 
 st.title("KI-gestützte Bewertung von Prüfungsantworten")
