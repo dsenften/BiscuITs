@@ -33,6 +33,8 @@ musterloesung = '''
 3. 127₁₀
     - 127 ist der grösste darstellbare positive 8-Bit-Wert im Zweierkomplement
     - Direkt: 01111111₂
+    
+Zumindest bei der ersten Aufgabe muss gezeigt werden, wie das 2er-Komplement gerechnet wird.
 '''
 
 st.title("KI-gestützte Bewertung von Prüfungsantworten")
