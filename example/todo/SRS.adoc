@@ -1,0 +1,156 @@
+= Todo-Manager: Software Requirements Specification
+:author: Daniel Senften
+:email: daniel.senften@talent-factory.ch
+:revnumber: 1.0
+:revdate: {docdate}
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:app: Todo-Manager
+:docname: SRS-Todo-Manager
+:toc-title: Inhaltsverzeichnis
+
+== Einführung
+
+=== Zweck
+
+Dieses Dokument beschreibt die Anforderungen für einen {app}. Ziel ist es, Entwicklern, Testern und Stakeholdern eine
+klare Grundlage für die Entwicklung und Validierung des Systems zu bieten.
+
+=== Geltungsbereich
+
+{app} wird gängige Produkte zu Verwaltung der ToDo's ablösen, sodass alle offenen Arbeiten zentral verwaltet werden
+können. Die Anwendung soll die Effizienz in der Bearbeitung der Aufgaben verbessern.
+
+=== Definitionen und Abkürzungen
+
+[cols="1,3"]
+|===
+|Begriff |Bedeutung
+|SRS |Software Requirements Specification
+|[Begriff] |[Bedeutung]
+|===
+
+=== Referenzen
+
+- Detailspezifikation nach https://www.hermes.admin.ch/de/projektmanagement/ergebnisse/detailspezifikation.html[Hermes]
+- [Weitere Dokumente, z. B. Projektvertrag, Benutzerhandbuch]
+
+== Gesamte Beschreibung
+
+=== Perspektive des Produkts
+
+{app} ist eine eigenständige Webanwendung.
+
+=== Produktfunktionen
+
+Die wichtigsten Funktionen von {app} sind:
+
+- Erstellung und Verwaltung von ToDo's
+- Kategorisierung von Aufgaben
+- Priorisierung von Aufgaben
+- Zeitplanung und Erinnerungen
+- Fortschrittsverfolgung
+- Synchronisierung über mehrere Geräte
+
+=== Benutzercharakteristiken
+
+Die Zielnutzer sind:
+
+- Individuelle Benutzer mit unterschiedlichen Produktivitätsanforderungen
+- Teams, die gemeinsam an Projekten arbeiten
+- Nutzer ohne technische Vorkenntnisse
+
+=== Einschränkungen
+
+- Das System muss auf modernen Webbrowsern (Chrome, Firefox, Safari) laufen
+- Die initiale Version soll ohne externe Datenbank laufen
+
+=== Annahmen und Abhängigkeiten
+
+- Eine stabile Internetverbindung ist für die Synchronisierung erforderlich
+- Moderne Browser mit Unterstützung für moderne Webtechnologien
+- Nutzer haben grundlegende Computerkenntnisse
+
+=== Anforderungsverteilung
+
+Die Anforderungen werden in folgenden Versionen umgesetzt:
+
+- Version 1.0: Kernfunktionalität (ToDo-Verwaltung, Kategorisierung, Priorisierung)
+- Version 1.1: Team-Funktionalität und Synchronisierung
+- Version 1.2: Erweiterte Berichterstellung und Analyse
+
+== Spezifische Anforderungen
+
+=== Externe Schnittstellen
+
+==== Benutzerschnittstellen
+
+- Das System bietet eine webbasierte GUI mit responsivem Design.
+- Menüs sollen intuitiv und in Deutsch und Französisch verfügbar sein.
+
+==== Hardwareschnittstellen
+
+- Das System läuft auf Standard-PC-Hardware mit mindestens 8 GB RAM.
+
+==== Softwareschnittstellen
+
+- Keine.
+
+==== Kommunikationsschnittstellen
+
+- In einer ersten Version wird ausschlesslich HTTP verwendet.
+
+
+=== Funktionale Anforderungen
+
+[cols="1,3"]
+|===
+|ID |Beschreibung
+|REQ-1.01 |Das System soll Benutzern die Erstellung von ToDos ermöglichen.
+|REQ-1.02 |Das System soll ToDos mit Titel, Beschreibung und Priorität versehen können.
+|REQ-1.03 |Das System soll ToDos in verschiedene Kategorien zuordnen können.
+|REQ-1.04 |Das System soll ToDos mit Fälligkeitsdatum und Uhrzeit versehen können.
+|REQ-1.05 |Das System soll wiederkehrende ToDos erstellen können.
+|REQ-1.06 |Das System soll ToDos nach Priorität, Fälligkeit oder Kategorie sortieren können.
+|REQ-1.07 |Das System soll die Fortschrittsanzeige von ToDos verwalten können.
+|REQ-1.08 |Das System soll ToDos mit Tags versehen können.
+|===
+
+=== Nicht-funktionale Anforderungen
+[cols="1,3"]
+|===
+|ID |Beschreibung
+|NFR-1.01 |Das System soll eine Antwortzeit von unter 1 Sekunde bei 50 gleichzeitigen Nutzern gewährleisten.
+|NFR-1.02 |Das System soll offline-fähig sein und Daten lokal zwischenspeichern können.
+|NFR-1.03 |Das System soll eine intuitive und benutzerfreundliche Benutzeroberfläche bieten.
+|NFR-1.04 |Das System soll auf mobilen Geräten und Desktop-Computern gleichermaßen gut funktionieren.
+|NFR-1.05 |Das System soll die DSGVO einhalten.
+|===
+
+=== Einschränkungen
+
+** Verwendung der Programmiersprache Python ond folgenden Libraries:
+    - Python 3.10 als Programmiersprache
+    - https://docs.pydantic.dev/[Pydantic]
+    - https://sqlite.org/[SQLlite], für die lokale Speicherung der Daten
+    - https://www.sqlalchemy.org/[SQLAlchemy], Object Relational Mapper (ORM)
+    - https://fastapi.tiangolo.com/[FastAPI]  (falls notwendig)
+
+** Responsive Design für verschiedene Bildschirmgrössen
+
+** Implementierung des Model Context Protocol (MCP) für zukünftige Erweiterungen
+
+
+=== Datenbankanforderungen
+
+- Lokale Speicherung in SQLlite
+
+=== Dokumentation und Schulung
+
+- Benutzerhandbuch in Deutsch (AsciiDoc)
+- Kurz-Tutorial für erste Schritte
+- API-Dokumentation für Entwickler
+- Best Practices für die Verwendung des Systems
+
