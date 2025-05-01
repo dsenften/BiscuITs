@@ -1,0 +1,4 @@
+streamlit==1.31.0
+sqlalchemy==2.0.25
+pydantic==2.5.3
+python-dotenv==1.0.0
