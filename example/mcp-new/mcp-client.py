@@ -6,9 +6,6 @@ MCP-Client für die Kommunikation mit dem MCP-Server
 """
 
 import asyncio
-import json
-from datetime import datetime
-
 import httpx
 
 

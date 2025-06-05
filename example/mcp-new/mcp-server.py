@@ -1,9 +1,8 @@
 # server.py
 import logging
 from datetime import datetime
-from typing import Dict, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 from starlette.responses import PlainTextResponse
 from uvicorn import run as uvicorn_run

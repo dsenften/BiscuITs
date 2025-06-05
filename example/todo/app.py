@@ -2,8 +2,7 @@ import streamlit as st
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-import uuid
-from models import Base, Todo, Tag, TodoTag
+from models import Base, Todo, Tag
 
 # Initialize database
 engine = create_engine('sqlite:///todos.db')
@@ -68,9 +67,9 @@ todos = session.query(Todo).filter(
 )
 
 if status_filter == "Offen":
-    todos = todos.filter(Todo.is_completed == False)
+    todos = todos.filter(~Todo.is_completed)
 elif status_filter == "Abgeschlossen":
-    todos = todos.filter(Todo.is_completed == True)
+    todos = todos.filter(Todo.is_completed)
 
 # Sort todos
 sort_by = st.radio("Sortieren nach", ["Priorität", "Fällig am", "Erstellt am"], horizontal=True)

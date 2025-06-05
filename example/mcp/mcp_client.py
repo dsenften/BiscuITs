@@ -1,6 +1,5 @@
 import json
 import requests
-from typing import Dict
 
 class MCPClientManager:
     """

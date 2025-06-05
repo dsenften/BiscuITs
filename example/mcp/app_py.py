@@ -22,8 +22,6 @@
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
 import streamlit as st
-import os
-from mcp_client import MCPClient, MCPContext
 from streamlit_integration import mcp_chat_page, mcp_settings_page
 from dotenv import load_dotenv
 

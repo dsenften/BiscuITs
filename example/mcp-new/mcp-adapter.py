@@ -9,10 +9,8 @@ MCP-Adapter für den Zeit-Demo-Server
 import asyncio
 import json
 import logging
-import os
 import sys
-from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 
 import httpx
 
