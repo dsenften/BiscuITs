@@ -14,18 +14,22 @@ logger = logging.getLogger(__name__)
 # FastAPI-App erstellen
 app = FastAPI(title="Zeit-Demo-Server")
 
+
 # Modelle für die API
 class AddRequest(BaseModel):
     a: int
     b: int
 
+
 class EmptyRequest(BaseModel):
     pass
+
 
 # Routen definieren
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Zeit-Demo-Server läuft"}
+
 
 @app.get("/tools")
 async def list_tools():
@@ -34,27 +38,30 @@ async def list_tools():
         {"name": "get_local_time", "description": "Get the current time in local timezone (CEST/UTC+2)"}
     ]
 
+
 @app.post("/tools/add")
 async def add(request: AddRequest):
     return request.a + request.b
+
 
 @app.post("/tools/get_local_time")
 async def get_local_time(request: EmptyRequest = None):
     now = datetime.now().astimezone()
     return now.strftime("%H:%M:%S %Z (%d.%m.%Y)")
 
+
 @app.get("/resources/greeting/{name}", response_class=PlainTextResponse)
 async def get_greeting(name: str):
     now = datetime.now().astimezone()
     hour = now.hour
-    
+
     if 5 <= hour < 12:
         greeting = "Guten Morgen"
     elif 12 <= hour < 18:
         greeting = "Guten Tag"
     else:
         greeting = "Guten Abend"
-        
+
     return f"{greeting}, {name}! Es ist jetzt {now.strftime('%H:%M:%S')} Uhr."
 
 
@@ -71,7 +78,7 @@ if __name__ == "__main__":
             "mcp-server:app",  # Importpfad zur FastAPI-App
             host="127.0.0.1",
             port=port,
-            reload=False,      # Kein automatisches Neuladen
+            reload=False,  # Kein automatisches Neuladen
             log_level="info"
         )
     except KeyboardInterrupt:

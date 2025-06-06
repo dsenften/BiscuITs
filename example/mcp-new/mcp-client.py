@@ -11,7 +11,7 @@ import httpx
 
 async def main():
     """Hauptfunktion für den MCP-Client"""
-    # Server-URL mit Port 8081
+    # Server-URL mit Port 8080
     server_url = "http://127.0.0.1:8081"
     
     # Verbindung zum MCP-Server herstellen
