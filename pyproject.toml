@@ -1,54 +1,36 @@
-[tool.poetry]
+[project]
 name = "biscuits"
 version = "0.1.0"
 description = "BiscuITs - AI-Powered Document Processing and Analysis"
 authors = ["Daniel Senften <daniel.senften@ffhs.ch>"]
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.13.1"
 packages = [{include = "biscuits"}]
 
-[tool.poetry.dependencies]
-python = "^3.11"
+dependencies = [
+    "anthropic>=0.68.0",
+    "httpx>=0.28.1",
+    "logfire>=4.9.0",
+    "mcp>=1.14.1",
+    "mcp-client>=0.0.0",
+    "openai>=1.109.0",
+    "playwright>=1.55.0",
+    "pydantic-ai>=1.0.10",
+    "python-dotenv>=1.1.1",
+    "requests>=2.32.5",
+    "sqlalchemy>=2.0.43",
+    "tiktoken>=0.11.0",
+    "uvicorn>=0.37.0",
+    "watchdog>=6.0.0",
+    "websockets>=15.0.1",
+]
 
-# AI & ML
-anthropic = "^0.49.0"
-openai = "^1.61.1"
-pydantic-ai = "^0.0.55"
-tiktoken = "^0.9.0"
-
-# Web & API
-fastapi = "^0.115.11"
-flask = "^3.1.0"
-streamlit = "^1.42.0"
-
-# Utils
-python-dotenv = "^1.0.1"
-requests = "^2.32.3"
-logfire = "^3.14.0"
-playwright = "^1.51.0"
-
-# MCP
-mcp = {extras = ["cli"], version = "^1.9.1"}
-mcp-client = "^0.2.0"
-watchdog = "^6.0.0"
-websockets = "^15.0.1"
-sqlalchemy = "^2.0.40"
-httpx = "^0.28.1"
-uvicorn = "^0.34.2"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-black = "^23.7.0"
-isort = "^5.12.0"
-flake8 = "^6.1.0"
-mypy = "^1.5.0"
-
-
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-watchdog = "^6.0.0"
-websockets = "^15.0.1"
-sqlalchemy = "^2.0.40"
-mcp = {extras = ["cli"], version = "^1.9.1"}
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+    "flake8>=7.3.0",
+    "isort>=6.0.1",
+    "mypy>=1.18.2",
+    "pytest>=8.4.2",
+]

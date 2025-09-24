@@ -1,5 +1,6 @@
 .codebuddy/
 .env
+.venv/
 .idea/
 
 # Python-spezifische Ausschlüsse
