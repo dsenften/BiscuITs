@@ -27,22 +27,19 @@ from pydantic_ai import Agent
 load_dotenv()
 
 # Initialize the agent
-agent = Agent(
-    model='anthropic:claude-3-5-sonnet-latest')
+agent = Agent(model="anthropic:claude-3-5-sonnet-latest")
 
 
 # noinspection DuplicatedCode
 async def main():
-    result = await agent.run('Hallo!')
+    result = await agent.run("Hallo!")
     while True:
-        print(f'\n{result.data}')
-        user_input = input('\n> ')
-        result = await agent.run(
-            user_input,
-            message_history=result.new_messages())
+        print(f"\n{result.data}")
+        user_input = input("\n> ")
+        result = await agent.run(user_input, message_history=result.new_messages())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import asyncio
 
     asyncio.run(main())

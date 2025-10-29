@@ -21,33 +21,35 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
-from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerStdio
+import os
 
 import logfire
 from dotenv import load_dotenv
-import os
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStdio
 
 load_dotenv()
-logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
+logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
 
 # Definieren des PostgreSQL-MCP-Servers, welcher in unserem Fall dynamisch
 # gestartet wird.
 postgres_server = MCPServerStdio(
-    'docker',
+    "docker",
     args=[
         "run",
         "-i",
         "--rm",
         "mcp/postgres",
-        "postgresql://postgres:admin@host.docker.internal:5432/test"
-    ])
+        "postgresql://postgres:admin@host.docker.internal:5432/test",
+    ],
+)
 
 # noinspection DuplicatedCode
 agent = Agent(
-    model='anthropic:claude-3-5-sonnet-latest',
+    model="anthropic:claude-3-5-sonnet-latest",
     instrument=True,
-    mcp_servers=[postgres_server])
+    mcp_servers=[postgres_server],
+)
 
 
 async def main():
@@ -56,9 +58,7 @@ async def main():
         while True:
             print(f"\n{result.data}")
             user_input = input("\n> ")
-            result = await agent.run(
-                user_input,
-                message_history=result.new_messages())
+            result = await agent.run(user_input, message_history=result.new_messages())
 
 
 if __name__ == "__main__":

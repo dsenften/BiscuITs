@@ -10,15 +10,15 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 import httpx
 
 # Logging konfigurieren
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='/tmp/zeit-mcp-adapter.log'  # Log in eine Datei schreiben
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    filename="/tmp/zeit-mcp-adapter.log",  # Log in eine Datei schreiben
 )
 logger = logging.getLogger(__name__)
 
@@ -47,16 +47,15 @@ class MCPAdapter:
                 # In MCP-Format umwandeln
                 mcp_tools = []
                 for tool in tools:
-                    mcp_tools.append({
-                        "name": tool["name"],
-                        "description": tool["description"],
-                        "parameters": {}  # Vereinfachte Parameter
-                    })
+                    mcp_tools.append(
+                        {
+                            "name": tool["name"],
+                            "description": tool["description"],
+                            "parameters": {},  # Vereinfachte Parameter
+                        }
+                    )
 
-                return {
-                    "type": "tools",
-                    "tools": mcp_tools
-                }
+                return {"type": "tools", "tools": mcp_tools}
 
             elif message_type == "call_tool":
                 tool_name = message.get("name")
@@ -64,30 +63,22 @@ class MCPAdapter:
 
                 if tool_name == "add":
                     response = await self.client.post(
-                        f"{SERVER_URL}/tools/add",
-                        json=parameters
+                        f"{SERVER_URL}/tools/add", json=parameters
                     )
                     result = response.json()
-                    return {
-                        "type": "tool_result",
-                        "result": result
-                    }
+                    return {"type": "tool_result", "result": result}
 
                 elif tool_name == "get_local_time":
                     response = await self.client.post(
-                        f"{SERVER_URL}/tools/get_local_time",
-                        json={}
+                        f"{SERVER_URL}/tools/get_local_time", json={}
                     )
                     result = response.json()
-                    return {
-                        "type": "tool_result",
-                        "result": result
-                    }
+                    return {"type": "tool_result", "result": result}
 
                 else:
                     return {
                         "type": "error",
-                        "message": f"Unbekanntes Werkzeug: {tool_name}"
+                        "message": f"Unbekanntes Werkzeug: {tool_name}",
                     }
 
             elif message_type == "list_resources":
@@ -97,9 +88,9 @@ class MCPAdapter:
                     "resources": [
                         {
                             "uri": "greeting://{name}",
-                            "description": "Get a personalized greeting"
+                            "description": "Get a personalized greeting",
                         }
-                    ]
+                    ],
                 }
 
             elif message_type == "get_resource":
@@ -107,32 +98,25 @@ class MCPAdapter:
 
                 if uri.startswith("greeting://"):
                     name = uri.replace("greeting://", "")
-                    response = await self.client.get(f"{SERVER_URL}/resources/greeting/{name}")
+                    response = await self.client.get(
+                        f"{SERVER_URL}/resources/greeting/{name}"
+                    )
                     content = response.text
 
-                    return {
-                        "type": "resource",
-                        "content": content
-                    }
+                    return {"type": "resource", "content": content}
 
                 else:
-                    return {
-                        "type": "error",
-                        "message": f"Unbekannte Ressource: {uri}"
-                    }
+                    return {"type": "error", "message": f"Unbekannte Ressource: {uri}"}
 
             else:
                 return {
                     "type": "error",
-                    "message": f"Unbekannter Nachrichtentyp: {message_type}"
+                    "message": f"Unbekannter Nachrichtentyp: {message_type}",
                 }
 
         except Exception as e:
             logger.error(f"Fehler bei der Verarbeitung der Nachricht: {e}")
-            return {
-                "type": "error",
-                "message": f"Interner Fehler: {str(e)}"
-            }
+            return {"type": "error", "message": f"Interner Fehler: {str(e)}"}
 
     async def run(self):
         """Hauptschleife für die Verarbeitung von MCP-Nachrichten"""
@@ -150,7 +134,9 @@ class MCPAdapter:
             # Hauptschleife
             while True:
                 # Nachricht von STDIN lesen
-                line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+                line = await asyncio.get_event_loop().run_in_executor(
+                    None, sys.stdin.readline
+                )
 
                 if not line:
                     logger.info("Ende der Eingabe erreicht")
@@ -170,10 +156,10 @@ class MCPAdapter:
 
                 except json.JSONDecodeError:
                     logger.error(f"Ungültiges JSON: {line}")
-                    print(json.dumps({
-                        "type": "error",
-                        "message": "Ungültiges JSON"
-                    }), flush=True)
+                    print(
+                        json.dumps({"type": "error", "message": "Ungültiges JSON"}),
+                        flush=True,
+                    )
 
         except Exception as e:
             logger.error(f"Unerwarteter Fehler: {e}")

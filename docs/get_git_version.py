@@ -2,15 +2,15 @@ import re
 
 
 def get_git_version_info():
-    with open('../.git/gitHeadInfo.gin', 'r') as file:
+    with open("../.git/gitHeadInfo.gin", "r") as file:
         content = file.read()
 
-    shash_match = re.search(r'shash=\{(\w+)', content)
-    refnames_match = re.search(r'refnames=\{\s?\(([^)]+)\)\s?', content)
+    shash_match = re.search(r"shash=\{(\w+)", content)
+    refnames_match = re.search(r"refnames=\{\s?\(([^)]+)\)\s?", content)
 
     if shash_match and refnames_match:
         shash = shash_match.group(1)
-        refnames = refnames_match.group(1).replace('->', '→')
+        refnames = refnames_match.group(1).replace("->", "→")
         return f"[git] Branch: {refnames}@{shash}"
     else:
         return "Version information not found"

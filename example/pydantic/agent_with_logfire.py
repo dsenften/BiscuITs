@@ -23,33 +23,29 @@
 
 import os
 
-from dotenv import load_dotenv
 import logfire
+from dotenv import load_dotenv
 from pydantic_ai import Agent
 
 load_dotenv()
 
 # Configure logfire
-logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
+logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
 
 # Initialize the agent
-agent = Agent(
-    model='anthropic:claude-3-5-sonnet-latest',
-    instrument=True)
+agent = Agent(model="anthropic:claude-3-5-sonnet-latest", instrument=True)
 
 
 # noinspection DuplicatedCode
 async def main():
-    result = await agent.run('Hallo!')
+    result = await agent.run("Hallo!")
     while True:
-        print(f'\n{result.data}')
-        user_input = input('\n> ')
-        result = await agent.run(
-            user_input,
-            message_history=result.new_messages())
+        print(f"\n{result.data}")
+        user_input = input("\n> ")
+        result = await agent.run(user_input, message_history=result.new_messages())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import asyncio
 
     asyncio.run(main())

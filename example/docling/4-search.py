@@ -21,8 +21,8 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
-from dotenv import load_dotenv
 import lancedb
+from dotenv import load_dotenv
 
 # noinspection DuplicatedCode
 load_dotenv()

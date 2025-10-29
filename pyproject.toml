@@ -2,7 +2,9 @@
 name = "biscuits"
 version = "0.1.0"
 description = "BiscuITs - AI-Powered Document Processing and Analysis"
-authors = ["Daniel Senften <daniel.senften@ffhs.ch>"]
+authors = [
+    {name = "Daniel Senften", email = "daniel.senften@ffhs.ch"}
+]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.13.1"
@@ -10,6 +12,7 @@ packages = [{include = "biscuits"}]
 
 dependencies = [
     "anthropic>=0.68.0",
+    "docling>=2.58.0",
     "httpx>=0.28.1",
     "logfire>=4.9.0",
     "mcp>=1.14.1",

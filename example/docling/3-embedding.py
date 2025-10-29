@@ -108,17 +108,21 @@ processed_chunks = [
         "text": chunk.text,
         "metadata": {
             "filename": chunk.meta.origin.filename,
-            "page_numbers": [
-                page_no
-                for page_no in sorted(
-                    set(
-                        prov.page_no
-                        for item in chunk.meta.doc_items
-                        for prov in item.prov
-                        if hasattr(prov, 'page_no') and prov.page_no is not None
+            "page_numbers": (
+                [
+                    page_no
+                    for page_no in sorted(
+                        set(
+                            prov.page_no
+                            for item in chunk.meta.doc_items
+                            for prov in item.prov
+                            if hasattr(prov, "page_no") and prov.page_no is not None
+                        )
                     )
-                )
-            ] if chunk.meta.doc_items else [],
+                ]
+                if chunk.meta.doc_items
+                else []
+            ),
             "title": chunk.meta.headings[0] if chunk.meta.headings else None,
         },
     }

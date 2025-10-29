@@ -29,16 +29,18 @@ from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerHTTP
 
 load_dotenv()
-logfire.configure(token=os.getenv('LOGFIRE_TOKEN'))
+logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
 
 # Follow the steps here to get your Riza remote MCP server URL: https://docs.riza.io/getting-started/mcp-servers
 riza_server = MCPServerHTTP(
-    url=f'https://mcp.riza.io/code-interpreter?secret={os.getenv("RIZA_TOKEN")}')
+    url=f'https://mcp.riza.io/code-interpreter?secret={os.getenv("RIZA_TOKEN")}'
+)
 
 agent = Agent(
-    model='anthropic:claude-3-5-sonnet-latest',
+    model="anthropic:claude-3-5-sonnet-latest",
     instrument=True,
-    mcp_servers=[riza_server])
+    mcp_servers=[riza_server],
+)
 
 
 async def main():
@@ -47,9 +49,7 @@ async def main():
         while True:
             print(f"\n{result.data}")
             user_input = input("\n> ")
-            result = await agent.run(
-                user_input,
-                message_history=result.new_messages())
+            result = await agent.run(user_input, message_history=result.new_messages())
 
 
 if __name__ == "__main__":

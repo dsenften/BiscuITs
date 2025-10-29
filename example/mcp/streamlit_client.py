@@ -1,14 +1,17 @@
-import streamlit as st
 import os
-from dotenv import load_dotenv
+
+import streamlit as st
 from claude_client import ClaudeClient
+from dotenv import load_dotenv
 
 # Schritt 1: Konfiguration laden und Claude-Client initialisieren
 load_dotenv()
 
 # Prüfen, ob API-Key gesetzt ist
 if not os.getenv("ANTHROPIC_API_KEY"):
-    st.error("🔍 API-Schlüssel fehlt! Bitte erstelle eine .env-Datei mit ANTHROPIC_API_KEY.")
+    st.error(
+        "🔍 API-Schlüssel fehlt! Bitte erstelle eine .env-Datei mit ANTHROPIC_API_KEY."
+    )
     st.info("Eine Beispiel-Datei .env.example ist im Projektverzeichnis verfügbar.")
     st.stop()
 
@@ -56,21 +59,24 @@ st.subheader("💬 Chat mit Claude (mit MCP-Tools)")
 for message in st.session_state.claude_client.get_conversation_history():
     role = message["role"]
     content = message["content"]
-    
+
     if role == "user":
         st.markdown(f"**Du:** {content}")
     elif role == "assistant":
-        st.markdown(f"<span style='color: #0a6cfc;'><b>Claude:</b> {content}</span>", unsafe_allow_html=True)
+        st.markdown(
+            f"<span style='color: #0a6cfc;'><b>Claude:</b> {content}</span>",
+            unsafe_allow_html=True,
+        )
 
 # Eingabefeld
 user_input = st.text_input("Deine Nachricht an Claude:")
 
 if st.button("Senden") and user_input:
-    with st.spinner("Claude denkt nach..."): 
+    with st.spinner("Claude denkt nach..."):
         try:
             # Anfrage an Claude senden
             response = st.session_state.claude_client.chat(user_input)
-            
+
             # Seite neu laden, um den aktualisierten Chat-Verlauf anzuzeigen
             st.rerun()
         except Exception as e:
@@ -78,7 +84,8 @@ if st.button("Senden") and user_input:
 
 # Hinweis zur Verwendung
 st.markdown("---")
-st.markdown("""
+st.markdown(
+    """
 **Hinweis zur Verwendung:**
 
 Dieser Client verbindet Claude mit MCP-Servern. Du kannst Claude bitten, die verfügbaren MCP-Tools zu verwenden, 
@@ -87,17 +94,19 @@ z.B. "Kannst du mit Playwright zu Google navigieren und einen Screenshot machen?
 Claude wird dann die entsprechenden MCP-Befehle ausführen und dir die Ergebnisse mitteilen.
 
 Die verfügbaren Tools sind in der Seitenleiste aufgeführt.
-""")
+"""
+)
 
 # Docker-Container stoppen (optional)
 if st.sidebar.button("Docker-Container stoppen"):
     if st.sidebar.button("Bestätigen"):
         import subprocess
+
         try:
             subprocess.run(
                 ["docker", "compose", "-f", "docker-compose.mcp.yml", "down"],
                 cwd=os.path.dirname(os.path.abspath(__file__)),
-                check=True
+                check=True,
             )
             st.sidebar.success("Docker-Container erfolgreich gestoppt")
         except Exception as e:

@@ -1,10 +1,13 @@
 import json
+
 import requests
+
 
 class MCPClientManager:
     """
     Verwaltet die Kommunikation mit mehreren MCP-Servern über HTTP gemäß Konfiguration.
     """
+
     def __init__(self, config_path: str):
         self.config_path = config_path
         self.load_config()
@@ -25,11 +28,7 @@ class MCPClientManager:
         url = self.get_server_url(name)
         try:
             # Einheitlicher /chat-Endpunkt durch unseren MCP-Proxy
-            resp = requests.post(
-                f"{url}/chat", 
-                json={"message": message}, 
-                timeout=10
-            )
+            resp = requests.post(f"{url}/chat", json={"message": message}, timeout=10)
             resp.raise_for_status()
             data = resp.json()
             return data.get("response", str(data))

@@ -4,7 +4,7 @@ import logging
 import os
 import time
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pika
 import streamlit as st
@@ -35,16 +35,15 @@ def get_rabbitmq_connection():
                 pika.ConnectionParameters(
                     host=RABBITMQ_HOST,
                     port=RABBITMQ_PORT,
-                    credentials=pika.PlainCredentials(
-                        RABBITMQ_USER,
-                        RABBITMQ_PASSWORD
-                    ),
-                    heartbeat=600
+                    credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD),
+                    heartbeat=600,
                 )
             )
         except Exception as e:
             if attempt < max_retries - 1:
-                logger.warning(f"Verbindung zu RabbitMQ fehlgeschlagen (Versuch {attempt + 1}/{max_retries}): {str(e)}")
+                logger.warning(
+                    f"Verbindung zu RabbitMQ fehlgeschlagen (Versuch {attempt + 1}/{max_retries}): {str(e)}"
+                )
                 time.sleep(retry_delay)
             else:
                 raise
@@ -59,25 +58,23 @@ def send_address(name, address):
         channel = connection.channel()
 
         # Queues deklarieren
-        channel.queue_declare(queue='address_analyzer_input')
-        channel.queue_declare(queue='ui_updates')
+        channel.queue_declare(queue="address_analyzer_input")
+        channel.queue_declare(queue="ui_updates")
 
         # Nachricht als JSON erstellen
-        message = json.dumps({
-            "name": name,
-            "address": address,
-            "timestamp": time.time()
-        })
+        message = json.dumps(
+            {"name": name, "address": address, "timestamp": time.time()}
+        )
 
         # Nachricht an die Queue senden
         channel.basic_publish(
-            exchange='',
-            routing_key='address_analyzer_input',
+            exchange="",
+            routing_key="address_analyzer_input",
             body=message,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # Nachricht persistent machen
-                content_type='application/json'
-            )
+                content_type="application/json",
+            ),
         )
 
         logger.info(f"Adressdaten für '{name}' erfolgreich gesendet")
@@ -98,11 +95,13 @@ def wait_for_result(timeout=30):
     try:
         connection = get_rabbitmq_connection()
         channel = connection.channel()
-        channel.queue_declare(queue='ui_updates')
+        channel.queue_declare(queue="ui_updates")
 
         start_time = time.time()
         while time.time() - start_time < timeout:
-            method_frame, properties, body = channel.basic_get(queue='ui_updates', auto_ack=True)
+            method_frame, properties, body = channel.basic_get(
+                queue="ui_updates", auto_ack=True
+            )
             if method_frame:
                 connection.close()
 
@@ -136,12 +135,12 @@ def main():
     with tab1:
         st.header("Adressdaten verarbeiten")
 
-        with st.form(key='address_form'):
+        with st.form(key="address_form"):
             name = st.text_input("Name")
             plz = st.text_input("PLZ")
             ort = st.text_input("Ort")
             strasse = st.text_input("Straße", "")
-            submit_button = st.form_submit_button(label='Adresse senden')
+            submit_button = st.form_submit_button(label="Adresse senden")
 
         if submit_button:
             if not name or not plz or not ort:
@@ -152,13 +151,15 @@ def main():
             address = f"{strasse}, {plz} {ort}"
 
             if send_address(name, address):
-                with st.spinner('Verarbeite Adressdaten...'):
+                with st.spinner("Verarbeite Adressdaten..."):
                     result = wait_for_result()
                     if result:
                         # Ergebnis als JSON formatiert anzeigen
                         if isinstance(result, dict):
                             if result.get("status") == "error":
-                                st.error(result.get("message", "Ein Fehler ist aufgetreten"))
+                                st.error(
+                                    result.get("message", "Ein Fehler ist aufgetreten")
+                                )
                             else:
                                 st.success("Adressdaten erfolgreich verarbeitet")
 
@@ -167,14 +168,17 @@ def main():
                         else:
                             st.success(result)
                     else:
-                        st.error("Zeitüberschreitung bei der Verarbeitung der Adressdaten.")
+                        st.error(
+                            "Zeitüberschreitung bei der Verarbeitung der Adressdaten."
+                        )
 
     # Tab für Dokumente
     with tab2:
         st.header("Dokumente hochladen")
 
-        uploaded_file = st.file_uploader("Dokument hochladen",
-                                         type=['pdf', 'txt', 'doc', 'docx', 'jpg', 'png'])
+        uploaded_file = st.file_uploader(
+            "Dokument hochladen", type=["pdf", "txt", "doc", "docx", "jpg", "png"]
+        )
 
         if uploaded_file is not None:
             st.info(f"Datei: {uploaded_file.name}")
@@ -191,13 +195,13 @@ class TestSendAddress(unittest.TestCase):
 
     def setUp(self):
         # Logging-Level während der Tests auf ERROR setzen
-        logging.getLogger('app').setLevel(logging.ERROR)
+        logging.getLogger("app").setLevel(logging.ERROR)
 
     def tearDown(self):
         # Logging-Level nach den Tests zurücksetzen
-        logging.getLogger('app').setLevel(logging.INFO)
+        logging.getLogger("app").setLevel(logging.INFO)
 
-    @patch('app.get_rabbitmq_connection')
+    @patch("app.get_rabbitmq_connection")
     def test_send_address_success(self, mock_get_connection):
         # Mock-Objekte einrichten
         mock_connection = MagicMock()
@@ -212,12 +216,12 @@ class TestSendAddress(unittest.TestCase):
         self.assertTrue(result)
         mock_get_connection.assert_called_once()
         mock_connection.channel.assert_called_once()
-        mock_channel.queue_declare.assert_any_call(queue='address_analyzer_input')
-        mock_channel.queue_declare.assert_any_call(queue='ui_updates')
+        mock_channel.queue_declare.assert_any_call(queue="address_analyzer_input")
+        mock_channel.queue_declare.assert_any_call(queue="ui_updates")
         mock_channel.basic_publish.assert_called_once()
         mock_connection.close.assert_called_once()
 
-    @patch('app.get_rabbitmq_connection')
+    @patch("app.get_rabbitmq_connection")
     def test_send_address_with_empty_name(self, mock_get_connection):
         # Test mit leerem Namen
         result = send_address("", "Teststraße 1, 12345 Teststadt")
@@ -225,7 +229,7 @@ class TestSendAddress(unittest.TestCase):
         self.assertTrue(result)
         mock_get_connection.assert_called_once()
 
-    @patch('app.get_rabbitmq_connection')
+    @patch("app.get_rabbitmq_connection")
     def test_send_address_with_empty_address(self, mock_get_connection):
         # Test mit leerer Adresse
         result = send_address("Test Kunde", "")
@@ -233,8 +237,8 @@ class TestSendAddress(unittest.TestCase):
         self.assertTrue(result)
         mock_get_connection.assert_called_once()
 
-    @patch('app.get_rabbitmq_connection', side_effect=Exception("Connection error"))
-    @patch('app.st')
+    @patch("app.get_rabbitmq_connection", side_effect=Exception("Connection error"))
+    @patch("app.st")
     def test_send_address_connection_error(self, mock_st, mock_get_connection):
         with contextlib.suppress(Exception):
             logging.disable(logging.CRITICAL)
@@ -244,7 +248,7 @@ class TestSendAddress(unittest.TestCase):
             mock_st.error.assert_called_once()
         logging.disable(logging.NOTSET)
 
-    @patch('app.get_rabbitmq_connection')
+    @patch("app.get_rabbitmq_connection")
     def test_send_address_message_structure(self, mock_get_connection):
         # Mock-Objekte einrichten
         mock_connection = MagicMock()
@@ -274,6 +278,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         import unittest
 
-        unittest.main(argv=['first-arg-is-ignored'])
+        unittest.main(argv=["first-arg-is-ignored"])
     else:
         main()

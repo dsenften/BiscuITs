@@ -21,6 +21,10 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
+import base64
+import json
+import os
+
 #  Released under MIT License
 #
 #
@@ -34,12 +38,9 @@
 #
 # app.py
 import streamlit as st
-import json
-import base64
-import os
 from dotenv import load_dotenv
-from playwright.sync_api import sync_playwright
 from openai import OpenAI
+from playwright.sync_api import sync_playwright
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -58,11 +59,15 @@ st.subheader("Stellen Sie Fragen oder geben Sie Anweisungen zur Webautomatisieru
 # Session States initialisieren
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Hallo! Ich bin dein Web-Automatisierungs-Assistent. Was möchtest du tun?"}
+        {
+            "role": "assistant",
+            "content": "Hallo! Ich bin dein Web-Automatisierungs-Assistent. Was möchtest du tun?",
+        }
     ]
 
 if "last_screenshot" not in st.session_state:
     st.session_state.last_screenshot = None
+
 
 # Funktion zum Ausführen von Playwright-Aktionen
 def run_playwright_action(action, params=None):
@@ -104,7 +109,10 @@ def run_playwright_action(action, params=None):
                 value = params.get("value")
                 if selector and value:
                     page.fill(selector, value)
-                    result = {"success": True, "message": f"Formular {selector} ausgefüllt mit '{value}'"}
+                    result = {
+                        "success": True,
+                        "message": f"Formular {selector} ausgefüllt mit '{value}'",
+                    }
                 else:
                     result = {"success": False, "error": "Selector oder Wert fehlt"}
             else:
@@ -114,6 +122,7 @@ def run_playwright_action(action, params=None):
             return result
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 # Funktion zum Aufrufen des LLM
 def call_llm(user_message, messages_history):
@@ -133,9 +142,7 @@ def call_llm(user_message, messages_history):
         Erkläre auch in natürlicher Sprache, was du tust."""
 
         # LLM-Anfrage senden
-        messages = [
-            {"role": "system", "content": system_message}
-        ]
+        messages = [{"role": "system", "content": system_message}]
 
         # Füge Konversationsverlauf hinzu
         for msg in messages_history:
@@ -146,15 +153,18 @@ def call_llm(user_message, messages_history):
         messages.append({"role": "user", "content": user_message})
 
         # API-Anfrage
-        response = client.chat.completions.create(model="gpt-4",  # oder ein anderes verfügbares Modell
-        messages=messages,
-        temperature=0.7,
-        max_tokens=1000)
+        response = client.chat.completions.create(
+            model="gpt-4",  # oder ein anderes verfügbares Modell
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1000,
+        )
 
         return response.choices[0].message.content
 
     except Exception as e:
         return f"Fehler bei der Anfrage an das LLM: {str(e)}"
+
 
 # Chat-Historie anzeigen
 for message in st.session_state.messages:
@@ -184,8 +194,11 @@ if prompt := st.chat_input("Gib deine Nachricht ein..."):
 
         # Nach Playwright-Aktionen in der Antwort suchen
         import re
+
         # Finde alle Aktionen in der LLM-Antwort
-        action_matches = list(re.finditer(r'\[PLAYWRIGHT_ACTION:(\w+)(?:,\s*(\{.*?\}))?\]', llm_response))
+        action_matches = list(
+            re.finditer(r"\[PLAYWRIGHT_ACTION:(\w+)(?:,\s*(\{.*?\}))?\]", llm_response)
+        )
 
         if action_matches:
             last_action_result = None
@@ -194,7 +207,7 @@ if prompt := st.chat_input("Gib deine Nachricht ein..."):
             last_action_params = None
             for match in action_matches:
                 action = match.group(1)
-                params_str = match.group(2) if match.group(2) else '{}'
+                params_str = match.group(2) if match.group(2) else "{}"
                 try:
                     params = json.loads(params_str)
                     with st.spinner(f"Führe Playwright-Aktion '{action}' aus..."):
@@ -204,19 +217,30 @@ if prompt := st.chat_input("Gib deine Nachricht ein..."):
                     last_action_name = action
                     last_action_params = params
                 except json.JSONDecodeError:
-                    message_placeholder.write(f"{llm_response}\n\n⚠️ Fehler beim Parsen der Parameter für die Playwright-Aktion.")
-                    st.session_state.messages.append({"role": "assistant", "content": f"{llm_response}\n\n⚠️ Fehler beim Parsen der Parameter für die Playwright-Aktion."})
+                    message_placeholder.write(
+                        f"{llm_response}\n\n⚠️ Fehler beim Parsen der Parameter für die Playwright-Aktion."
+                    )
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": f"{llm_response}\n\n⚠️ Fehler beim Parsen der Parameter für die Playwright-Aktion.",
+                        }
+                    )
                     break
                 except Exception as e:
                     error_msg = f"⚠️ Unerwarteter Fehler bei der Ausführung der Playwright-Aktion: {str(e)}"
                     message_placeholder.write(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": error_msg}
+                    )
                     break
             # Nach der letzten Aktion: Antwort aktualisieren
             if last_action_result and last_action_result.get("success", False):
-                clean_response = re.sub(r'\[PLAYWRIGHT_ACTION:(\w+)(?:,\s*(\{.*?\}))?\]', 
-                                       lambda m: f"Aktion '{m.group(1)}' erfolgreich ausgeführt!", 
-                                       llm_response)
+                clean_response = re.sub(
+                    r"\[PLAYWRIGHT_ACTION:(\w+)(?:,\s*(\{.*?\}))?\]",
+                    lambda m: f"Aktion '{m.group(1)}' erfolgreich ausgeführt!",
+                    llm_response,
+                )
                 if last_action_name == "get_title" and "title" in last_action_result:
                     clean_response += f"\n\nDer Titel der Seite ist: **{last_action_result['title']}**"
                 elif last_action_name == "get_text" and "text" in last_action_result:
@@ -228,13 +252,26 @@ if prompt := st.chat_input("Gib deine Nachricht ein..."):
                     new_assistant_message["screenshot"] = image_data
                 st.session_state.messages.append(new_assistant_message)
             else:
-                error_message = last_action_result.get("error", "Unbekannter Fehler") if last_action_result else "Unbekannter Fehler"
-                message_placeholder.write(f"{llm_response}\n\n⚠️ Fehler bei der Ausführung: {error_message}")
-                st.session_state.messages.append({"role": "assistant", "content": f"{llm_response}\n\n⚠️ Fehler bei der Ausführung: {error_message}"})
+                error_message = (
+                    last_action_result.get("error", "Unbekannter Fehler")
+                    if last_action_result
+                    else "Unbekannter Fehler"
+                )
+                message_placeholder.write(
+                    f"{llm_response}\n\n⚠️ Fehler bei der Ausführung: {error_message}"
+                )
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": f"{llm_response}\n\n⚠️ Fehler bei der Ausführung: {error_message}",
+                    }
+                )
         else:
             # LLM-Antwort ohne Playwright-Aktion anzeigen
             message_placeholder.write(llm_response)
-            st.session_state.messages.append({"role": "assistant", "content": llm_response})
+            st.session_state.messages.append(
+                {"role": "assistant", "content": llm_response}
+            )
 
 # Sidebar-Optionen
 st.sidebar.header("Optionen")
@@ -242,18 +279,23 @@ st.sidebar.header("Optionen")
 # Chat löschen Button
 if st.sidebar.button("Chat zurücksetzen"):
     st.session_state.messages = [
-        {"role": "assistant", "content": "Hallo! Ich bin dein Web-Automatisierungs-Assistent. Was möchtest du tun?"}
+        {
+            "role": "assistant",
+            "content": "Hallo! Ich bin dein Web-Automatisierungs-Assistent. Was möchtest du tun?",
+        }
     ]
     st.session_state.last_screenshot = None
     st.experimental_rerun()
 
 # Hinweise hinzufügen
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
+st.sidebar.markdown(
+    """
 ### Beispielbefehle:
 - "Öffne die Website example.com"
 - "Mache einen Screenshot von google.com"
 - "Wie lautet der Titel der Seite github.com?"
 - "Klicke auf den Login-Button auf example.com"
 - "Fülle das Suchfeld auf google.com mit 'Playwright Python' aus"
-""")
+"""
+)

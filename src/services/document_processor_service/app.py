@@ -1,13 +1,14 @@
-import os
 import hashlib
+import logging
+import os
+
+import requests
+from docling_core.document import Document as DoclingDocument
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from dotenv import load_dotenv
-from docling_core.document import Document as DoclingDocument
-import logging
 
 # Logger konfigurieren
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +48,9 @@ class DocumentRequest(BaseModel):
 async def process_document(request: DocumentRequest):
     try:
         # Dokument vom document_service abrufen
-        response = requests.get(f"{DOCUMENT_SERVICE_URL}/documents/{request.document_id}")
+        response = requests.get(
+            f"{DOCUMENT_SERVICE_URL}/documents/{request.document_id}"
+        )
         if response.status_code != 200:
             raise HTTPException(status_code=404, detail="Document not found")
 
@@ -64,7 +67,9 @@ async def process_document(request: DocumentRequest):
             embedding = doc.embedding
 
             # Deterministischen Hash erstellen
-            doc_id_hash = int(hashlib.md5(request.document_id.encode()).hexdigest(), 16) % (10 ** 10)
+            doc_id_hash = int(
+                hashlib.md5(request.document_id.encode()).hexdigest(), 16
+            ) % (10**10)
 
             # In Qdrant speichern
             qdrant_client.upsert(
@@ -77,11 +82,17 @@ async def process_document(request: DocumentRequest):
                             "document_id": request.document_id,
                             "content": document_content,
                             "summary": doc.summary if hasattr(doc, "summary") else "",
-                            "keywords": doc.keywords if hasattr(doc, "keywords") else [],
-                            "sentiment": doc.sentiment if hasattr(doc, "sentiment") else "neutral"
-                        }
+                            "keywords": (
+                                doc.keywords if hasattr(doc, "keywords") else []
+                            ),
+                            "sentiment": (
+                                doc.sentiment
+                                if hasattr(doc, "sentiment")
+                                else "neutral"
+                            ),
+                        },
                     )
-                ]
+                ],
             )
             logger.info(f"Dokument {request.document_id} in Qdrant gespeichert")
         except AttributeError as e:
@@ -89,14 +100,16 @@ async def process_document(request: DocumentRequest):
             raise HTTPException(status_code=500, detail=f"Docling-API-Fehler: {str(e)}")
         except Exception as e:
             logger.error(f"Fehler bei der Dokumentverarbeitung: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Verarbeitungsfehler: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Verarbeitungsfehler: {str(e)}"
+            )
 
         return {
             "status": "success",
             "document_id": request.document_id,
             "summary": doc.summary if hasattr(doc, "summary") else "",
             "keywords": doc.keywords if hasattr(doc, "keywords") else [],
-            "sentiment": doc.sentiment if hasattr(doc, "sentiment") else "neutral"
+            "sentiment": doc.sentiment if hasattr(doc, "sentiment") else "neutral",
         }
 
     except Exception as e:

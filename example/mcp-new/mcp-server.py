@@ -8,7 +8,9 @@ from starlette.responses import PlainTextResponse
 from uvicorn import run as uvicorn_run
 
 # Logging konfigurieren
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # FastAPI-App erstellen
@@ -35,7 +37,10 @@ async def root():
 async def list_tools():
     return [
         {"name": "add", "description": "Add two numbers"},
-        {"name": "get_local_time", "description": "Get the current time in local timezone (CEST/UTC+2)"}
+        {
+            "name": "get_local_time",
+            "description": "Get the current time in local timezone (CEST/UTC+2)",
+        },
     ]
 
 
@@ -79,7 +84,7 @@ if __name__ == "__main__":
             host="127.0.0.1",
             port=port,
             reload=False,  # Kein automatisches Neuladen
-            log_level="info"
+            log_level="info",
         )
     except KeyboardInterrupt:
         logger.info("Server wird beendet...")
