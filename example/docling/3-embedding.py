@@ -21,6 +21,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
+import os
 from typing import List
 
 import lancedb
@@ -34,6 +35,11 @@ from utils.tokenizer import OpenAITokenizerWrapper
 
 # noinspection DuplicatedCode
 load_dotenv()
+
+# Set HuggingFace token for model downloads
+hf_token = os.getenv("HUGGINGFACE_API_KEY")
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
 
 # Initialize OpenAI client (make sure you have OPENAI_API_KEY in your environment variables)
 client = OpenAI()

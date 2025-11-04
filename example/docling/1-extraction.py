@@ -21,8 +21,18 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
 
+import os
+from dotenv import load_dotenv
 from docling.document_converter import DocumentConverter
 from utils.sitemap import get_sitemap_urls
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set HuggingFace token for model downloads
+hf_token = os.getenv("HUGGINGFACE_API_KEY")
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
 
 converter = DocumentConverter()
 
