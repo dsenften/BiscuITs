@@ -3,6 +3,9 @@
 .venv/
 .idea/
 
+# Claude Code lokale Einstellungen
+.claude/settings.local.json
+
 # Python-spezifische Ausschlüsse
 __pycache__/
 *.py[cod]
